@@ -1,6 +1,8 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+
+import { getExpectedTrackFilenames } from './audio-spec.mjs';
 
 const audioDir = join(process.cwd(), 'public', 'audio');
 const toleranceSec = 0.12;
@@ -10,16 +12,14 @@ if (!existsSync(audioDir)) {
   process.exit(1);
 }
 
-const files = readdirSync(audioDir).filter((name) => name.endsWith('.mp3'));
-if (files.length === 0) {
-  console.error('No mp3 files found in public/audio');
-  process.exit(1);
-}
-
+const files = getExpectedTrackFilenames();
 let hasFailure = false;
+
 for (const file of files) {
   const match = file.match(/-(\d+)m\.mp3$/);
   if (!match) {
+    hasFailure = true;
+    console.error(`Cannot parse duration from filename: ${file}`);
     continue;
   }
 

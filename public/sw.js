@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const APP_SHELL_CACHE = `breeth-shell-${CACHE_VERSION}`;
 const AUDIO_CACHE = `breeth-audio-${CACHE_VERSION}`;
 
@@ -40,8 +40,7 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname.includes('/audio/')) {
     if (request.headers.has('range')) {
-      // Audio elements often request byte ranges (206); these should not be cached via Cache.put.
-      event.respondWith(fetch(request));
+      event.respondWith(handleAudioRangeRequest(request, url.toString()));
       return;
     }
     event.respondWith(cacheFirst(request, AUDIO_CACHE));
@@ -75,6 +74,47 @@ async function cacheFirst(request, cacheName) {
       return fallback;
     }
     return new Response('Offline', { status: 503, statusText: 'Offline' });
+  }
+}
+
+async function handleAudioRangeRequest(request, canonicalUrl) {
+  const cache = await caches.open(AUDIO_CACHE);
+  const cached = await cache.match(canonicalUrl);
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const response = await fetch(request);
+    if (response.ok && response.status !== 206) {
+      await cache.put(canonicalUrl, response.clone());
+    } else if (response.ok && response.status === 206) {
+      void primeAudioCache(canonicalUrl);
+    }
+    return response;
+  } catch {
+    if (cached) {
+      return cached;
+    }
+    return new Response('Offline', { status: 503, statusText: 'Offline' });
+  }
+}
+
+async function primeAudioCache(canonicalUrl) {
+  const cache = await caches.open(AUDIO_CACHE);
+  const existing = await cache.match(canonicalUrl);
+  if (existing) {
+    return;
+  }
+
+  try {
+    const response = await fetch(new Request(canonicalUrl, { method: 'GET' }));
+    if (response.ok && response.status !== 206) {
+      await cache.put(canonicalUrl, response.clone());
+    }
+  } catch {
+    // Best-effort cache warming only.
   }
 }
 

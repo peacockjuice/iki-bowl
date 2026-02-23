@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "generate:audio": "node scripts/generate-audio.mjs",
-    "check:audio": "node scripts/check-audio-duration.mjs"
+    "check:audio": "node scripts/check-audio-duration.mjs",
+    "check:audio:set": "node scripts/check-audio-set.mjs",
+    "check:audio:size": "node scripts/check-audio-size.mjs",
+    "check:assets": "npm run check:audio:set && npm run check:audio && npm run check:audio:size"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

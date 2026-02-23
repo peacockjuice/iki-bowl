@@ -10,12 +10,15 @@ Breeth is a static audio-first breathing app. Each breathing session is played a
 
 ## Implemented MVP scope
 
-- Modes: `4-4`, `Box 4-4-4-4`, `4-7-8`
+- Mode types:
+  - `Equal (N-N)` with `N=4..8`
+  - `Box 4-4-4-4`
+  - `4-7-8`
 - Durations: `5, 10, 15, 20, 25, 30` minutes
-- Controls: Start / Pause / Resume / Stop
+- Controls: Start / Pause / Resume / Restart / Stop
 - Countdown from `<audio>.currentTime` and `<audio>.duration`
 - Offline playback for cached tracks
-- Local persistence for mode/duration/volume
+- Local persistence for mode/duration/volume + Equal slider value
 
 ## Run locally
 
@@ -31,25 +34,38 @@ npm run build
 npm run preview
 ```
 
-## Audio generation
+## Audio generation and validation
 
-Generate 3 source sounds + 18 session tracks:
+Generate source sounds and full track set:
 
 ```bash
 npm run generate:audio
 ```
 
-Validate all generated track durations:
+Validation suite:
 
 ```bash
+npm run check:audio:set
 npm run check:audio
+npm run check:audio:size
 ```
 
-Generated files:
+Or run all gates at once:
 
-- `public/audio/even-44-5m.mp3` ... `public/audio/even-44-30m.mp3`
-- `public/audio/box-4444-5m.mp3` ... `public/audio/box-4444-30m.mp3`
-- `public/audio/relax-478-5m.mp3` ... `public/audio/relax-478-30m.mp3`
+```bash
+npm run check:assets
+```
+
+### Naming convention
+
+- Equal: `even-44-5m.mp3` ... `even-88-30m.mp3`
+- Box: `box-4444-5m.mp3` ... `box-4444-30m.mp3`
+- 4-7-8: `relax-478-5m.mp3` ... `relax-478-30m.mp3`
+
+Total expected session tracks: `42`.
+
+Source sounds:
+
 - `public/audio/source/gong_inhale.mp3`
 - `public/audio/source/gong_exhale.mp3`
 - `public/audio/source/tick_soft.mp3`
@@ -58,10 +74,9 @@ Generated files:
 
 Recommended path is GitHub Actions via `/Users/vpavlin/PycharmProjects/breeth/.github/workflows/deploy-pages.yml`.
 
-1. Push the project to a GitHub repository (default branch: `main`).
+1. Push the project to GitHub (`main` branch).
 2. In repository settings, open `Pages` and set source to `GitHub Actions`.
-3. Push to `main` (or run the workflow manually from Actions tab).
-4. Workflow builds with `BASE_PATH=/<repo-name>/` and publishes `dist` automatically.
+3. Workflow validates audio assets, builds with repo base-path, and publishes `dist`.
 
 ## PWA notes
 
@@ -71,6 +86,15 @@ Recommended path is GitHub Actions via `/Users/vpavlin/PycharmProjects/breeth/.g
   - App shell: cache-first
   - Audio: cache-first with lazy cache on first use
 
+## Audio size gate
+
+Asset growth is controlled with checks:
+
+- Warning above `220 MB`
+- Fail above `260 MB`
+
+Thresholds apply to expected `42` session tracks.
+
 ## Tested iPhone/iOS
 
 - Pending manual verification on physical device before release.
@@ -79,14 +103,16 @@ Recommended path is GitHub Actions via `/Users/vpavlin/PycharmProjects/breeth/.g
 
 - iOS lock-screen/background media behavior varies by device, iOS version, and system settings (including Low Power Mode).
 - Offline playback is guaranteed only for tracks that were previously cached.
-- Audio encoding is tuned for size constraints (`~40 kbps mono`) to keep total MVP asset size near 100 MB.
+- Audio encoding is tuned for size constraints (`~40 kbps mono`) to keep session-track set near practical limits.
 
 ## QA checklist
 
-- Validate all mode/duration combinations map to correct file.
-- Verify tick rules by mode:
-  - no tick in 4-4
-  - ticks only in hold phases in Box and 4-7-8
-- Verify Start/Pause/Resume/Stop/completion state transitions.
+- Equal mode:
+  - Validate `N=4..8` mapping across all durations.
+  - Verify slider value persistence after reload.
+- Regression on existing modes:
+  - Box: tick only in hold phases.
+  - 4-7-8: tick only in 7-second hold.
+- Verify Start/Pause/Resume/Restart/Stop/completion state transitions.
 - Verify PWA install and standalone launch on iPhone.
 - Verify lock-screen playback in iPhone PWA for at least 10 minutes.

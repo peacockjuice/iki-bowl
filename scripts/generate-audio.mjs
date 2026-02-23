@@ -1,6 +1,8 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+
+import { DURATIONS_MIN, EQUAL_SECONDS } from './audio-spec.mjs';
 
 const SAMPLE_RATE = 22050;
 const TARGET_PEAK = 0.89;
@@ -10,19 +12,21 @@ const audioDir = join(projectRoot, 'public', 'audio');
 const sourceDir = join(audioDir, 'source');
 const tempDir = join(projectRoot, '.tmp-audio');
 
-const durationsMin = [5, 10, 15, 20, 25, 30];
-const modes = {
-  even44: { prefix: 'even-44' },
-  box4444: { prefix: 'box-4444' },
-  relax478: { prefix: 'relax-478' },
-};
-
 function ensureDirs() {
   [audioDir, sourceDir, tempDir].forEach((dir) => {
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
   });
+}
+
+function clearGeneratedTracks() {
+  for (const file of readdirSync(audioDir)) {
+    const filePath = join(audioDir, file);
+    if (file.endsWith('.mp3')) {
+      unlinkSync(filePath);
+    }
+  }
 }
 
 function tone({
@@ -120,7 +124,23 @@ function encodeWav(floatData, outputPath) {
 function toMp3(inputWavPath, outputMp3Path) {
   const result = spawnSync(
     'ffmpeg',
-    ['-y', '-hide_banner', '-loglevel', 'error', '-i', inputWavPath, '-ac', '1', '-ar', String(SAMPLE_RATE), '-codec:a', 'libmp3lame', '-b:a', '40k', outputMp3Path],
+    [
+      '-y',
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-i',
+      inputWavPath,
+      '-ac',
+      '1',
+      '-ar',
+      String(SAMPLE_RATE),
+      '-codec:a',
+      'libmp3lame',
+      '-b:a',
+      '40k',
+      outputMp3Path,
+    ],
     { stdio: 'inherit' },
   );
 
@@ -129,18 +149,19 @@ function toMp3(inputWavPath, outputMp3Path) {
   }
 }
 
-function scheduleModeEvents(mode, durationSec, sounds) {
+function scheduleModeEvents(modeType, durationSec, sounds, equalSeconds = 4) {
   const out = new Float32Array(Math.floor(durationSec * SAMPLE_RATE));
 
-  if (mode === 'even44') {
-    for (let cycleStart = 0; cycleStart < durationSec; cycleStart += 8) {
+  if (modeType === 'equal') {
+    const cycleSec = equalSeconds * 2;
+    for (let cycleStart = 0; cycleStart < durationSec; cycleStart += cycleSec) {
       mixSound(out, sounds.inhale, cycleStart, 1);
-      mixSound(out, sounds.exhale, cycleStart + 4, 1);
+      mixSound(out, sounds.exhale, cycleStart + equalSeconds, 1);
     }
     return out;
   }
 
-  if (mode === 'box4444') {
+  if (modeType === 'box4444') {
     for (let cycleStart = 0; cycleStart < durationSec; cycleStart += 16) {
       mixSound(out, sounds.inhale, cycleStart, 1);
       for (let sec = 0; sec < 4; sec += 1) {
@@ -166,6 +187,7 @@ function scheduleModeEvents(mode, durationSec, sounds) {
 
 function generate() {
   ensureDirs();
+  clearGeneratedTracks();
 
   const sourceSounds = {
     inhale: tone({ durationSec: 0.32, baseFreq: 540, harmonics: [1, 0.35, 0.12], attackSec: 0.005, decaySec: 0.22, gain: 0.45 }),
@@ -187,18 +209,33 @@ function generate() {
     toMp3(wavPath, mp3Path);
   });
 
-  for (const [mode, modeConfig] of Object.entries(modes)) {
-    for (const durationMin of durationsMin) {
+  for (const equalSeconds of EQUAL_SECONDS) {
+    for (const durationMin of DURATIONS_MIN) {
       const durationSec = durationMin * 60;
-      const mixed = scheduleModeEvents(mode, durationSec, sourceSounds);
+      const mixed = scheduleModeEvents('equal', durationSec, sourceSounds, equalSeconds);
       normalizeBuffer(mixed);
 
-      const filename = `${modeConfig.prefix}-${durationMin}m.mp3`;
-      const wavPath = join(tempDir, `${modeConfig.prefix}-${durationMin}m.wav`);
+      const filename = `even-${equalSeconds}${equalSeconds}-${durationMin}m.mp3`;
+      const wavPath = join(tempDir, `even-${equalSeconds}${equalSeconds}-${durationMin}m.wav`);
       const mp3Path = join(audioDir, filename);
       encodeWav(mixed, wavPath);
       toMp3(wavPath, mp3Path);
+      console.log(`Generated ${filename}`);
+    }
+  }
 
+  for (const modeType of ['box4444', 'relax478']) {
+    for (const durationMin of DURATIONS_MIN) {
+      const durationSec = durationMin * 60;
+      const mixed = scheduleModeEvents(modeType, durationSec, sourceSounds);
+      normalizeBuffer(mixed);
+
+      const prefix = modeType === 'box4444' ? 'box-4444' : 'relax-478';
+      const filename = `${prefix}-${durationMin}m.mp3`;
+      const wavPath = join(tempDir, `${prefix}-${durationMin}m.wav`);
+      const mp3Path = join(audioDir, filename);
+      encodeWav(mixed, wavPath);
+      toMp3(wavPath, mp3Path);
       console.log(`Generated ${filename}`);
     }
   }

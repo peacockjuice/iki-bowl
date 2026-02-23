@@ -1,5 +1,8 @@
 export interface UiRefs {
   modeSelect: HTMLSelectElement;
+  equalField: HTMLElement;
+  equalInput: HTMLInputElement;
+  equalValue: HTMLElement;
   durationSelect: HTMLSelectElement;
   volumeInput: HTMLInputElement;
   volumeValue: HTMLElement;
@@ -42,6 +45,14 @@ export function renderApp(root: HTMLElement): UiRefs {
           <label class="label" for="modeSelect">Breathing mode</label>
           <select id="modeSelect"></select>
         </div>
+
+        <div id="equalField" class="field">
+          <label class="label" for="equalInput">
+            Equal rhythm N-N (<span id="equalValue">4-4</span>)
+          </label>
+          <input id="equalInput" type="range" min="4" max="8" step="1" value="4" />
+        </div>
+
         <div class="field">
           <label class="label" for="durationSelect">Session duration</label>
           <select id="durationSelect"></select>
@@ -106,6 +117,9 @@ export function renderApp(root: HTMLElement): UiRefs {
 
   return {
     modeSelect: query<HTMLSelectElement>(root, '#modeSelect'),
+    equalField: query<HTMLElement>(root, '#equalField'),
+    equalInput: query<HTMLInputElement>(root, '#equalInput'),
+    equalValue: query<HTMLElement>(root, '#equalValue'),
     durationSelect: query<HTMLSelectElement>(root, '#durationSelect'),
     volumeInput: query<HTMLInputElement>(root, '#volumeInput'),
     volumeValue: query<HTMLElement>(root, '#volumeValue'),

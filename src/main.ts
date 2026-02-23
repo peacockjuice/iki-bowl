@@ -5,7 +5,15 @@ import type { PlayerStateChangeDetail, TimeUpdateDetail, TrackStatusDetail } fro
 import { registerServiceWorker } from './pwa/registerSw';
 import { loadSettings, saveSettings } from './storage/settings';
 import { renderApp } from './ui/template';
-import { DURATIONS, MODES, type DurationMin, type Mode } from './utils/constants';
+import {
+  DURATIONS,
+  EQUAL_SECONDS,
+  MODE_TYPES,
+  getModeLabel,
+  type DurationMin,
+  type EqualSeconds,
+  type ModeType,
+} from './utils/constants';
 import { formatMmSs } from './utils/time';
 import { resolveTrackFilename } from './utils/trackMapping';
 
@@ -20,18 +28,27 @@ const ui = renderApp(appRoot);
 const settings = loadSettings();
 const player = new AudioSessionPlayer();
 
-let selectedMode: Mode = settings.mode;
+let selectedModeType: ModeType = settings.modeType;
+let selectedEqualSeconds: EqualSeconds = settings.equalSeconds;
 let selectedDuration: DurationMin = settings.durationMin;
 let selectedTrackSrc = '';
 let rafId = 0;
 
+function setEqualFieldVisibility(): void {
+  ui.equalField.classList.toggle('hidden', selectedModeType !== 'equal');
+}
+
+function setEqualValue(): void {
+  ui.equalValue.textContent = `${selectedEqualSeconds}-${selectedEqualSeconds}`;
+}
+
 function setSessionLabels(): void {
-  ui.sessionMode.textContent = MODES[selectedMode].label;
+  ui.sessionMode.textContent = getModeLabel(selectedModeType, selectedEqualSeconds);
   ui.sessionDuration.textContent = `${selectedDuration} min`;
 }
 
-function getTrackSrc(mode: Mode, durationMin: DurationMin): string {
-  const filename = resolveTrackFilename(mode, durationMin);
+function getTrackSrc(modeType: ModeType, equalSeconds: EqualSeconds, durationMin: DurationMin): string {
+  const filename = resolveTrackFilename({ modeType, equalSeconds, durationMin });
   return new URL(`audio/${filename}`, new URL(import.meta.env.BASE_URL, window.location.origin)).toString();
 }
 
@@ -106,7 +123,7 @@ function setMediaSessionMetadata(): void {
   }
 
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: `Breeth ${MODES[selectedMode].label}`,
+    title: `Breeth ${getModeLabel(selectedModeType, selectedEqualSeconds)}`,
     artist: 'Breeth',
     album: `${selectedDuration} min session`,
   });
@@ -140,19 +157,21 @@ function configureMediaSessionActions(): void {
 
 function preloadSelectedTrack(): void {
   clearMessages();
-  selectedTrackSrc = getTrackSrc(selectedMode, selectedDuration);
+  selectedTrackSrc = getTrackSrc(selectedModeType, selectedEqualSeconds, selectedDuration);
   player.preload(selectedTrackSrc);
   ui.preloadStatus.textContent = 'Preparing selected session...';
   ui.startButton.disabled = true;
+  setEqualFieldVisibility();
+  setEqualValue();
   setSessionLabels();
   setMediaSessionMetadata();
 }
 
 function fillOptions(): void {
-  Object.values(MODES).forEach((mode) => {
+  Object.values(MODE_TYPES).forEach((modeType) => {
     const option = document.createElement('option');
-    option.value = mode.key;
-    option.textContent = mode.label;
+    option.value = modeType.key;
+    option.textContent = modeType.label;
     ui.modeSelect.append(option);
   });
 
@@ -167,7 +186,8 @@ function fillOptions(): void {
 fillOptions();
 configureMediaSessionActions();
 
-ui.modeSelect.value = selectedMode;
+ui.modeSelect.value = selectedModeType;
+ui.equalInput.value = String(selectedEqualSeconds);
 ui.durationSelect.value = String(selectedDuration);
 ui.volumeInput.value = String(settings.volumePercent);
 ui.volumeValue.textContent = `${settings.volumePercent}%`;
@@ -176,11 +196,29 @@ player.setVolumeFromPercent(settings.volumePercent);
 updatePauseResumeButton('other');
 updateRestartButtonEnabled(false);
 updateRemaining(0);
+setEqualFieldVisibility();
+setEqualValue();
 setSessionLabels();
 
 ui.modeSelect.addEventListener('change', () => {
-  selectedMode = ui.modeSelect.value as Mode;
-  saveSettings({ mode: selectedMode });
+  const candidate = ui.modeSelect.value;
+  if (!(candidate in MODE_TYPES)) {
+    return;
+  }
+
+  selectedModeType = candidate as ModeType;
+  saveSettings({ modeType: selectedModeType });
+  preloadSelectedTrack();
+});
+
+ui.equalInput.addEventListener('input', () => {
+  const value = Number(ui.equalInput.value);
+  if (!(EQUAL_SECONDS as readonly number[]).includes(value)) {
+    return;
+  }
+
+  selectedEqualSeconds = value as EqualSeconds;
+  saveSettings({ equalSeconds: selectedEqualSeconds });
   preloadSelectedTrack();
 });
 
