@@ -1,7 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
-const basePath = process.env.BASE_PATH ?? '/';
-
-export default defineConfig({
-  base: basePath,
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, '.', '');
+  return {
+    base: env.BASE_PATH || '/',
+  };
 });
