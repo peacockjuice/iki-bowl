@@ -16,6 +16,7 @@ export class AudioSessionPlayer extends EventTarget {
     this.audio.preload = 'auto';
     this.audio.loop = false;
     this.audio.controls = false;
+    this.audio.volume = 1;
 
     this.audio.addEventListener('loadedmetadata', this.handleTrackReady);
     this.audio.addEventListener('canplay', this.handleTrackReady);
@@ -42,10 +43,6 @@ export class AudioSessionPlayer extends EventTarget {
 
   isTrackReadyFor(src: string): boolean {
     return this.trackReady && src === this.currentTrackSrc;
-  }
-
-  setVolumeFromPercent(volumePercent: number): void {
-    this.audio.volume = Math.min(1, Math.max(0, volumePercent / 100));
   }
 
   preload(src: string): void {

@@ -123,8 +123,8 @@ function setMediaSessionMetadata(): void {
   }
 
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: `Breeth ${getModeLabel(selectedModeType, selectedEqualSeconds)}`,
-    artist: 'Breeth',
+    title: `Iki Gong ${getModeLabel(selectedModeType, selectedEqualSeconds)}`,
+    artist: 'Iki Gong',
     album: `${selectedDuration} min session`,
   });
 }
@@ -189,10 +189,6 @@ configureMediaSessionActions();
 ui.modeSelect.value = selectedModeType;
 ui.equalInput.value = String(selectedEqualSeconds);
 ui.durationSelect.value = String(selectedDuration);
-ui.volumeInput.value = String(settings.volumePercent);
-ui.volumeValue.textContent = `${settings.volumePercent}%`;
-
-player.setVolumeFromPercent(settings.volumePercent);
 updatePauseResumeButton('other');
 updateRestartButtonEnabled(false);
 updateRemaining(0);
@@ -226,13 +222,6 @@ ui.durationSelect.addEventListener('change', () => {
   selectedDuration = Number(ui.durationSelect.value) as DurationMin;
   saveSettings({ durationMin: selectedDuration });
   preloadSelectedTrack();
-});
-
-ui.volumeInput.addEventListener('input', () => {
-  const volumePercent = Number(ui.volumeInput.value);
-  ui.volumeValue.textContent = `${volumePercent}%`;
-  player.setVolumeFromPercent(volumePercent);
-  saveSettings({ volumePercent });
 });
 
 async function startSelectedSession(): Promise<void> {

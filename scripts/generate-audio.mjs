@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -6,11 +6,18 @@ import { DURATIONS_MIN, EQUAL_SECONDS } from './audio-spec.mjs';
 
 const SAMPLE_RATE = 22050;
 const TARGET_PEAK = 0.89;
+const MP3_BITRATE = '40k';
 
 const projectRoot = process.cwd();
 const audioDir = join(projectRoot, 'public', 'audio');
 const sourceDir = join(audioDir, 'source');
 const tempDir = join(projectRoot, '.tmp-audio');
+
+const BOWLS_FILES = {
+  inhale: join(projectRoot, 'bowls_3_1.mp3'),
+  hold: join(projectRoot, 'bowls_3_2.mp3'),
+  exhale: join(projectRoot, 'bowls_3_3.mp3'),
+};
 
 function ensureDirs() {
   [audioDir, sourceDir, tempDir].forEach((dir) => {
@@ -20,40 +27,43 @@ function ensureDirs() {
   });
 }
 
-function clearGeneratedTracks() {
-  for (const file of readdirSync(audioDir)) {
-    const filePath = join(audioDir, file);
-    if (file.endsWith('.mp3')) {
-      unlinkSync(filePath);
+function assertInputFiles() {
+  for (const [role, path] of Object.entries(BOWLS_FILES)) {
+    if (!existsSync(path)) {
+      throw new Error(`Missing source sample for ${role}: ${path}`);
     }
   }
 }
 
-function tone({
-  durationSec,
-  baseFreq,
-  harmonics = [1, 0.3],
-  attackSec = 0.01,
-  decaySec = 0.25,
-  gain = 0.6,
-}) {
-  const length = Math.max(1, Math.floor(durationSec * SAMPLE_RATE));
-  const out = new Float32Array(length);
+function decodeToMonoFloat32(inputPath) {
+  const result = spawnSync(
+    'ffmpeg',
+    ['-v', 'error', '-i', inputPath, '-f', 'f32le', '-ac', '1', '-ar', String(SAMPLE_RATE), 'pipe:1'],
+    {
+      encoding: null,
+      maxBuffer: 512 * 1024 * 1024,
+    },
+  );
 
-  for (let i = 0; i < length; i += 1) {
-    const t = i / SAMPLE_RATE;
-    const attack = Math.min(1, t / attackSec);
-    const decay = Math.exp(-Math.max(0, t - attackSec) / Math.max(0.001, decaySec));
-    const env = attack * decay;
-
-    let value = 0;
-    for (let h = 0; h < harmonics.length; h += 1) {
-      value += harmonics[h] * Math.sin(2 * Math.PI * baseFreq * (h + 1) * t);
-    }
-    out[i] = value * env * gain;
+  if (result.status !== 0 || !result.stdout) {
+    throw new Error(`ffmpeg decode failed for ${inputPath}`);
   }
 
-  return out;
+  const buffer = result.stdout;
+  const floatCount = Math.floor(buffer.byteLength / 4);
+  const view = new Float32Array(buffer.buffer, buffer.byteOffset, floatCount);
+  return new Float32Array(view);
+}
+
+function writeSourceCopies() {
+  copyFileSync(BOWLS_FILES.inhale, join(sourceDir, 'bowls_3_1.mp3'));
+  copyFileSync(BOWLS_FILES.hold, join(sourceDir, 'bowls_3_2.mp3'));
+  copyFileSync(BOWLS_FILES.exhale, join(sourceDir, 'bowls_3_3.mp3'));
+
+  // Compatibility aliases used by older docs and tooling.
+  copyFileSync(BOWLS_FILES.inhale, join(sourceDir, 'gong_inhale.mp3'));
+  copyFileSync(BOWLS_FILES.hold, join(sourceDir, 'tick_soft.mp3'));
+  copyFileSync(BOWLS_FILES.exhale, join(sourceDir, 'gong_exhale.mp3'));
 }
 
 function normalizeBuffer(buffer) {
@@ -64,30 +74,17 @@ function normalizeBuffer(buffer) {
       peak = abs;
     }
   }
-  if (peak <= 0) {
+
+  if (peak <= TARGET_PEAK || peak <= 0) {
     return buffer;
   }
-  const scale = peak > TARGET_PEAK ? TARGET_PEAK / peak : 1;
+
+  const scale = TARGET_PEAK / peak;
   for (let i = 0; i < buffer.length; i += 1) {
     const value = buffer[i] * scale;
     buffer[i] = Math.max(-1, Math.min(1, value));
   }
   return buffer;
-}
-
-function mixSound(target, sound, startSec, gain = 1) {
-  const startIndex = Math.floor(startSec * SAMPLE_RATE);
-  if (startIndex >= target.length) {
-    return;
-  }
-
-  for (let i = 0; i < sound.length; i += 1) {
-    const idx = startIndex + i;
-    if (idx >= target.length) {
-      break;
-    }
-    target[idx] += sound[i] * gain;
-  }
 }
 
 function encodeWav(floatData, outputPath) {
@@ -138,106 +135,108 @@ function toMp3(inputWavPath, outputMp3Path) {
       '-codec:a',
       'libmp3lame',
       '-b:a',
-      '40k',
+      MP3_BITRATE,
       outputMp3Path,
     ],
     { stdio: 'inherit' },
   );
 
   if (result.status !== 0) {
-    throw new Error(`ffmpeg failed for ${outputMp3Path}`);
+    throw new Error(`ffmpeg encode failed for ${outputMp3Path}`);
   }
 }
 
-function scheduleModeEvents(modeType, durationSec, sounds, equalSeconds = 4) {
-  const out = new Float32Array(Math.floor(durationSec * SAMPLE_RATE));
-
-  if (modeType === 'equal') {
-    const cycleSec = equalSeconds * 2;
-    for (let cycleStart = 0; cycleStart < durationSec; cycleStart += cycleSec) {
-      mixSound(out, sounds.inhale, cycleStart, 1);
-      mixSound(out, sounds.exhale, cycleStart + equalSeconds, 1);
-    }
-    return out;
+function copyPhase(track, startSample, samplesToWrite, source) {
+  if (samplesToWrite <= 0 || source.length === 0) {
+    return;
   }
 
-  if (modeType === 'box4444') {
-    for (let cycleStart = 0; cycleStart < durationSec; cycleStart += 16) {
-      mixSound(out, sounds.inhale, cycleStart, 1);
-      for (let sec = 0; sec < 4; sec += 1) {
-        mixSound(out, sounds.tick, cycleStart + 4 + sec, 1);
+  for (let i = 0; i < samplesToWrite; i += 1) {
+    track[startSample + i] += source[i % source.length];
+  }
+}
+
+function buildTrack(durationSec, phaseSpec, sourceByRole) {
+  const totalSamples = Math.floor(durationSec * SAMPLE_RATE);
+  const track = new Float32Array(totalSamples);
+
+  let cursor = 0;
+  while (cursor < totalSamples) {
+    for (const phase of phaseSpec) {
+      if (cursor >= totalSamples) {
+        break;
       }
-      mixSound(out, sounds.exhale, cycleStart + 8, 1);
-      for (let sec = 0; sec < 4; sec += 1) {
-        mixSound(out, sounds.tick, cycleStart + 12 + sec, 1);
-      }
+
+      const desiredSamples = Math.floor(phase.seconds * SAMPLE_RATE);
+      const writable = Math.min(desiredSamples, totalSamples - cursor);
+      copyPhase(track, cursor, writable, sourceByRole[phase.role]);
+      cursor += writable;
     }
-    return out;
   }
 
-  for (let cycleStart = 0; cycleStart < durationSec; cycleStart += 19) {
-    mixSound(out, sounds.inhale, cycleStart, 1);
-    for (let sec = 0; sec < 7; sec += 1) {
-      mixSound(out, sounds.tick, cycleStart + 4 + sec, 1);
-    }
-    mixSound(out, sounds.exhale, cycleStart + 11, 1);
-  }
-  return out;
+  return track;
+}
+
+function createEqualPhaseSpec(equalSeconds) {
+  return [
+    { role: 'inhale', seconds: equalSeconds },
+    { role: 'exhale', seconds: equalSeconds },
+  ];
+}
+
+function createBoxPhaseSpec() {
+  return [
+    { role: 'inhale', seconds: 4 },
+    { role: 'hold', seconds: 4 },
+    { role: 'exhale', seconds: 4 },
+    { role: 'hold', seconds: 4 },
+  ];
+}
+
+function createRelaxPhaseSpec() {
+  return [
+    { role: 'inhale', seconds: 4 },
+    { role: 'hold', seconds: 7 },
+    { role: 'exhale', seconds: 8 },
+  ];
+}
+
+function renderTrack(filename, durationMin, phaseSpec, sourceByRole) {
+  const durationSec = durationMin * 60;
+  const mixed = buildTrack(durationSec, phaseSpec, sourceByRole);
+  normalizeBuffer(mixed);
+
+  const wavPath = join(tempDir, `${filename}.wav`);
+  const mp3Path = join(audioDir, `${filename}.mp3`);
+  encodeWav(mixed, wavPath);
+  toMp3(wavPath, mp3Path);
+  console.log(`Generated ${filename}.mp3`);
 }
 
 function generate() {
+  assertInputFiles();
   ensureDirs();
-  clearGeneratedTracks();
+  writeSourceCopies();
 
-  const sourceSounds = {
-    inhale: tone({ durationSec: 0.32, baseFreq: 540, harmonics: [1, 0.35, 0.12], attackSec: 0.005, decaySec: 0.22, gain: 0.45 }),
-    exhale: tone({ durationSec: 0.34, baseFreq: 330, harmonics: [1, 0.28, 0.09], attackSec: 0.005, decaySec: 0.24, gain: 0.42 }),
-    tick: tone({ durationSec: 0.075, baseFreq: 1300, harmonics: [1], attackSec: 0.002, decaySec: 0.05, gain: 0.19 }),
+  const sourceByRole = {
+    inhale: decodeToMonoFloat32(BOWLS_FILES.inhale),
+    hold: decodeToMonoFloat32(BOWLS_FILES.hold),
+    exhale: decodeToMonoFloat32(BOWLS_FILES.exhale),
   };
-
-  const sourceNames = {
-    inhale: 'gong_inhale',
-    exhale: 'gong_exhale',
-    tick: 'tick_soft',
-  };
-
-  Object.entries(sourceSounds).forEach(([key, value]) => {
-    normalizeBuffer(value);
-    const wavPath = join(tempDir, `${sourceNames[key]}.wav`);
-    const mp3Path = join(sourceDir, `${sourceNames[key]}.mp3`);
-    encodeWav(value, wavPath);
-    toMp3(wavPath, mp3Path);
-  });
 
   for (const equalSeconds of EQUAL_SECONDS) {
+    const phaseSpec = createEqualPhaseSpec(equalSeconds);
     for (const durationMin of DURATIONS_MIN) {
-      const durationSec = durationMin * 60;
-      const mixed = scheduleModeEvents('equal', durationSec, sourceSounds, equalSeconds);
-      normalizeBuffer(mixed);
-
-      const filename = `even-${equalSeconds}${equalSeconds}-${durationMin}m.mp3`;
-      const wavPath = join(tempDir, `even-${equalSeconds}${equalSeconds}-${durationMin}m.wav`);
-      const mp3Path = join(audioDir, filename);
-      encodeWav(mixed, wavPath);
-      toMp3(wavPath, mp3Path);
-      console.log(`Generated ${filename}`);
+      renderTrack(`even-${equalSeconds}${equalSeconds}-${durationMin}m`, durationMin, phaseSpec, sourceByRole);
     }
   }
 
-  for (const modeType of ['box4444', 'relax478']) {
-    for (const durationMin of DURATIONS_MIN) {
-      const durationSec = durationMin * 60;
-      const mixed = scheduleModeEvents(modeType, durationSec, sourceSounds);
-      normalizeBuffer(mixed);
+  const boxPhaseSpec = createBoxPhaseSpec();
+  const relaxPhaseSpec = createRelaxPhaseSpec();
 
-      const prefix = modeType === 'box4444' ? 'box-4444' : 'relax-478';
-      const filename = `${prefix}-${durationMin}m.mp3`;
-      const wavPath = join(tempDir, `${prefix}-${durationMin}m.wav`);
-      const mp3Path = join(audioDir, filename);
-      encodeWav(mixed, wavPath);
-      toMp3(wavPath, mp3Path);
-      console.log(`Generated ${filename}`);
-    }
+  for (const durationMin of DURATIONS_MIN) {
+    renderTrack(`box-4444-${durationMin}m`, durationMin, boxPhaseSpec, sourceByRole);
+    renderTrack(`relax-478-${durationMin}m`, durationMin, relaxPhaseSpec, sourceByRole);
   }
 
   rmSync(tempDir, { recursive: true, force: true });

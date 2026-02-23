@@ -12,7 +12,6 @@ const STORAGE_KEYS = {
   modeType: 'selectedModeType',
   equalSeconds: 'equalSeconds',
   durationMin: 'selectedDuration',
-  volumePercent: 'masterVolume',
   installHintDismissed: 'installHintDismissed',
   lastUsedAt: 'lastUsedAt',
 } as const;
@@ -25,7 +24,6 @@ export interface AppSettings {
   modeType: ModeType;
   equalSeconds: EqualSeconds;
   durationMin: DurationMin;
-  volumePercent: number;
   installHintDismissed?: boolean;
   lastUsedAt?: string;
 }
@@ -34,12 +32,39 @@ function isModeType(input: string): input is ModeType {
   return input in MODE_TYPES;
 }
 
-function isDuration(input: number): input is DurationMin {
-  return (DURATIONS as readonly number[]).includes(input);
+function normalizeEqualSeconds(input: number): EqualSeconds {
+  if (!Number.isFinite(input)) {
+    return DEFAULT_SETTINGS.equalSeconds;
+  }
+
+  const rounded = Math.round(input);
+  const min = EQUAL_SECONDS[0];
+  const max = EQUAL_SECONDS[EQUAL_SECONDS.length - 1];
+  if (rounded <= min) {
+    return min;
+  }
+  if (rounded >= max) {
+    return max;
+  }
+  return rounded as EqualSeconds;
 }
 
-function isEqualSeconds(input: number): input is EqualSeconds {
-  return (EQUAL_SECONDS as readonly number[]).includes(input);
+function normalizeDuration(input: number): DurationMin {
+  if (!Number.isFinite(input)) {
+    return DEFAULT_SETTINGS.durationMin;
+  }
+
+  let best: DurationMin = DURATIONS[0];
+  let bestDiff = Math.abs(input - best);
+  for (const candidate of DURATIONS.slice(1)) {
+    const diff = Math.abs(input - candidate);
+    if (diff < bestDiff || (diff === bestDiff && candidate > best)) {
+      best = candidate;
+      bestDiff = diff;
+    }
+  }
+
+  return best;
 }
 
 function mapLegacyMode(mode: string | null): { modeType: ModeType; equalSeconds: EqualSeconds } | null {
@@ -66,12 +91,11 @@ export function loadSettings(): AppSettings {
   const modeTypeRaw = localStorage.getItem(STORAGE_KEYS.modeType);
   const equalRaw = Number(localStorage.getItem(STORAGE_KEYS.equalSeconds) ?? DEFAULT_SETTINGS.equalSeconds);
   const durationRaw = Number(localStorage.getItem(STORAGE_KEYS.durationMin) ?? DEFAULT_SETTINGS.durationMin);
-  const volumeRaw = Number(localStorage.getItem(STORAGE_KEYS.volumePercent) ?? DEFAULT_SETTINGS.volumePercent);
   const legacyModeRaw = localStorage.getItem(LEGACY_KEYS.mode);
   const modeTypeCandidate = modeTypeRaw ?? '';
 
   let modeType: ModeType = isModeType(modeTypeCandidate) ? modeTypeCandidate : DEFAULT_SETTINGS.modeType;
-  let equalSeconds: EqualSeconds = isEqualSeconds(equalRaw) ? equalRaw : DEFAULT_SETTINGS.equalSeconds;
+  let equalSeconds: EqualSeconds = normalizeEqualSeconds(equalRaw);
 
   // One-time migration from previous mode model.
   if (!modeTypeRaw && legacyModeRaw) {
@@ -79,16 +103,21 @@ export function loadSettings(): AppSettings {
     if (legacyMapped) {
       modeType = legacyMapped.modeType;
       equalSeconds = legacyMapped.equalSeconds;
-      localStorage.setItem(STORAGE_KEYS.modeType, modeType);
-      localStorage.setItem(STORAGE_KEYS.equalSeconds, String(equalSeconds));
     }
   }
+
+  const durationMin = normalizeDuration(durationRaw);
+
+  // Persist normalized values to keep storage consistent across app upgrades.
+  localStorage.setItem(STORAGE_KEYS.modeType, modeType);
+  localStorage.setItem(STORAGE_KEYS.equalSeconds, String(equalSeconds));
+  localStorage.setItem(STORAGE_KEYS.durationMin, String(durationMin));
+  localStorage.removeItem('masterVolume');
 
   return {
     modeType,
     equalSeconds,
-    durationMin: isDuration(durationRaw) ? durationRaw : DEFAULT_SETTINGS.durationMin,
-    volumePercent: Number.isFinite(volumeRaw) ? Math.min(100, Math.max(0, volumeRaw)) : DEFAULT_SETTINGS.volumePercent,
+    durationMin,
     installHintDismissed: localStorage.getItem(STORAGE_KEYS.installHintDismissed) === 'true',
     lastUsedAt: localStorage.getItem(STORAGE_KEYS.lastUsedAt) ?? undefined,
   };
@@ -99,13 +128,10 @@ export function saveSettings(partial: Partial<AppSettings>): void {
     localStorage.setItem(STORAGE_KEYS.modeType, partial.modeType);
   }
   if (typeof partial.equalSeconds === 'number') {
-    localStorage.setItem(STORAGE_KEYS.equalSeconds, String(partial.equalSeconds));
+    localStorage.setItem(STORAGE_KEYS.equalSeconds, String(normalizeEqualSeconds(partial.equalSeconds)));
   }
   if (typeof partial.durationMin === 'number') {
-    localStorage.setItem(STORAGE_KEYS.durationMin, String(partial.durationMin));
-  }
-  if (typeof partial.volumePercent === 'number') {
-    localStorage.setItem(STORAGE_KEYS.volumePercent, String(Math.min(100, Math.max(0, partial.volumePercent))));
+    localStorage.setItem(STORAGE_KEYS.durationMin, String(normalizeDuration(partial.durationMin)));
   }
   if (typeof partial.installHintDismissed === 'boolean') {
     localStorage.setItem(STORAGE_KEYS.installHintDismissed, String(partial.installHintDismissed));

@@ -1,5 +1,5 @@
-export const DURATIONS_MIN = [5, 10, 15, 20, 25, 30];
-export const EQUAL_SECONDS = [4, 5, 6, 7, 8];
+export const DURATIONS_MIN = [5, 10, 20];
+export const EQUAL_SECONDS = [4, 5, 6, 7];
 
 export function getExpectedTrackFilenames() {
   const tracks = [];

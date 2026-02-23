@@ -13,8 +13,8 @@ export const MODE_TYPES = {
   },
 } as const;
 
-export const EQUAL_SECONDS = [4, 5, 6, 7, 8] as const;
-export const DURATIONS = [5, 10, 15, 20, 25, 30] as const;
+export const EQUAL_SECONDS = [4, 5, 6, 7] as const;
+export const DURATIONS = [5, 10, 20] as const;
 
 export type ModeType = keyof typeof MODE_TYPES;
 export type EqualSeconds = (typeof EQUAL_SECONDS)[number];
@@ -24,7 +24,6 @@ export const DEFAULT_SETTINGS = {
   modeType: 'equal' as ModeType,
   equalSeconds: 4 as EqualSeconds,
   durationMin: 10 as DurationMin,
-  volumePercent: 80,
 };
 
 export function getModeLabel(modeType: ModeType, equalSeconds: EqualSeconds): string {

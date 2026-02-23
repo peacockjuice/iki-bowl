@@ -35,6 +35,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
+      - name: Validate branding constraints
+        run: npm run check:branding
+
       - name: Validate audio assets
         run: npm run check:assets
 

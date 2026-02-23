@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 const APP_SHELL_CACHE = `breeth-shell-${CACHE_VERSION}`;
 const AUDIO_CACHE = `breeth-audio-${CACHE_VERSION}`;
 

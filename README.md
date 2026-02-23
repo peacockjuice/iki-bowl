@@ -1,118 +1,94 @@
-# Breeth MVP (iOS-first PWA)
+# Iki Gong
 
-Breeth is a static audio-first breathing app. Each breathing session is played as one pre-generated audio file via HTML `<audio>` to maximize lock-screen playback reliability on iPhone.
+Static iOS-first breathing PWA (no backend). Each session is one pre-generated audio track played via HTML `<audio>`.
 
-## Tech stack
+## Modes and durations
 
-- Vite + vanilla TypeScript
-- PWA manifest + service worker
-- No backend
+- `Equal (N-N)` where `N = 4..7`
+- `Box 4-4-4-4`
+- `4-7-8`
+- Durations: `5, 10, 20` minutes
+- No in-app volume control. Use device volume buttons.
 
-## Implemented MVP scope
-
-- Mode types:
-  - `Equal (N-N)` with `N=4..8`
-  - `Box 4-4-4-4`
-  - `4-7-8`
-- Durations: `5, 10, 15, 20, 25, 30` minutes
-- Controls: Start / Pause / Resume / Restart / Stop
-- Countdown from `<audio>.currentTime` and `<audio>.duration`
-- Offline playback for cached tracks
-- Local persistence for mode/duration/volume + Equal slider value
-
-## Run locally
+## Local run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Build preview:
+Production check:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Audio generation and validation
+## Audio pipeline
 
-Generate source sounds and full track set:
+Source samples used by generator:
+
+- inhale: `/Users/vpavlin/PycharmProjects/breeth/bowls_3_1.mp3`
+- hold: `/Users/vpavlin/PycharmProjects/breeth/bowls_3_2.mp3`
+- exhale: `/Users/vpavlin/PycharmProjects/breeth/bowls_3_3.mp3`
+
+Generate active set:
 
 ```bash
 npm run generate:audio
 ```
 
-Validation suite:
+Run asset gates:
 
 ```bash
-npm run check:audio:set
-npm run check:audio
-npm run check:audio:size
-```
-
-Or run all gates at once:
-
-```bash
+npm run check:branding
 npm run check:assets
 ```
 
-### Naming convention
+`check:assets` validates:
 
-- Equal: `even-44-5m.mp3` ... `even-88-30m.mp3`
-- Box: `box-4444-5m.mp3` ... `box-4444-30m.mp3`
-- 4-7-8: `relax-478-5m.mp3` ... `relax-478-30m.mp3`
+- required active set exists (`18` tracks)
+- durations are correct
+- active-set size gate (warn `>220MB`, fail `>260MB`)
 
-Total expected session tracks: `42`.
+Naming (active set):
 
-Source sounds:
+- Equal: `even-44/55/66/77-{5|10|20}m.mp3`
+- Box: `box-4444-{5|10|20}m.mp3`
+- 4-7-8: `relax-478-{5|10|20}m.mp3`
 
-- `public/audio/source/gong_inhale.mp3`
-- `public/audio/source/gong_exhale.mp3`
-- `public/audio/source/tick_soft.mp3`
+Legacy files (`15/25/30`, `even-88`) are intentionally kept but excluded from active validation.
 
-## GitHub Pages deployment
+## Deploy (GitHub Pages)
 
-Recommended path is GitHub Actions via `/Users/vpavlin/PycharmProjects/breeth/.github/workflows/deploy-pages.yml`.
+Workflow: `.github/workflows/deploy-pages.yml`
 
-1. Push the project to GitHub (`main` branch).
-2. In repository settings, open `Pages` and set source to `GitHub Actions`.
-3. Workflow validates audio assets, builds with repo base-path, and publishes `dist`.
+- push to `main`
+- repo `Settings -> Pages -> Source: GitHub Actions`
+- workflow validates assets, builds, deploys `dist`
 
-## PWA notes
+## iOS QA minimum
 
-- Manifest: `public/manifest.webmanifest`
-- Service worker: `public/sw.js`
-- Cache strategy:
-  - App shell: cache-first
-  - Audio: cache-first with lazy cache on first use
-
-## Audio size gate
-
-Asset growth is controlled with checks:
-
-- Warning above `220 MB`
-- Fail above `260 MB`
-
-Thresholds apply to expected `42` session tracks.
-
-## Tested iPhone/iOS
-
-- Pending manual verification on physical device before release.
+- install from Safari to Home Screen
+- run `Equal 7-7, 10m`
+- lock screen playback for at least 10 minutes
+- verify Pause / Resume / Restart / Stop
+- verify offline playback for previously cached active track
 
 ## Known limitations
 
-- iOS lock-screen/background media behavior varies by device, iOS version, and system settings (including Low Power Mode).
-- Offline playback is guaranteed only for tracks that were previously cached.
-- Audio encoding is tuned for size constraints (`~40 kbps mono`) to keep session-track set near practical limits.
+- iOS background behavior varies by device/iOS/settings
+- offline works only for cached tracks
+- audio uses constrained bitrate (`~40 kbps mono`) to control repository size
 
-## QA checklist
+## Visual direction (brandbook)
 
-- Equal mode:
-  - Validate `N=4..8` mapping across all durations.
-  - Verify slider value persistence after reload.
-- Regression on existing modes:
-  - Box: tick only in hold phases.
-  - 4-7-8: tick only in 7-second hold.
-- Verify Start/Pause/Resume/Restart/Stop/completion state transitions.
-- Verify PWA install and standalone launch on iPhone.
-- Verify lock-screen playback in iPhone PWA for at least 10 minutes.
+- quiet, minimal interface with no visual noise
+- no gradients or glass effects
+- no pure white `#FFFFFF` or pure black `#000000`
+- single sans-serif type family with regular/medium weights
+- color system based on muted earth tones (sage/clay palette)
+
+## Contributor rules
+
+See `rules.md`.

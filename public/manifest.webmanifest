@@ -1,11 +1,11 @@
 {
-  "name": "Breeth",
-  "short_name": "Breeth",
+  "name": "Iki Gong",
+  "short_name": "Iki Gong",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "theme_color": "#0f766e",
-  "background_color": "#ccfbf1",
+  "theme_color": "#F4F2EC",
+  "background_color": "#F4F2EC",
   "icons": [
     {
       "src": "icons/icon-192.png",

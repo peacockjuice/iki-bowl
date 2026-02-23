@@ -4,8 +4,6 @@ export interface UiRefs {
   equalInput: HTMLInputElement;
   equalValue: HTMLElement;
   durationSelect: HTMLSelectElement;
-  volumeInput: HTMLInputElement;
-  volumeValue: HTMLElement;
   preloadStatus: HTMLElement;
   startButton: HTMLButtonElement;
   homeSection: HTMLElement;
@@ -36,8 +34,8 @@ export function renderApp(root: HTMLElement): UiRefs {
   root.innerHTML = `
     <main class="app">
       <section class="card">
-        <h1>Breeth</h1>
-        <p class="subtitle">Audio-first breathing sessions for iPhone lock-screen use.</p>
+        <h1>Iki Gong</h1>
+        <p class="subtitle">Quiet breathing sessions for iPhone lock-screen use.</p>
       </section>
 
       <section id="homeSection" class="card">
@@ -50,16 +48,12 @@ export function renderApp(root: HTMLElement): UiRefs {
           <label class="label" for="equalInput">
             Equal rhythm N-N (<span id="equalValue">4-4</span>)
           </label>
-          <input id="equalInput" type="range" min="4" max="8" step="1" value="4" />
+          <input id="equalInput" type="range" min="4" max="7" step="1" value="4" />
         </div>
 
         <div class="field">
           <label class="label" for="durationSelect">Session duration</label>
           <select id="durationSelect"></select>
-        </div>
-        <div class="field">
-          <label class="label" for="volumeInput">Master volume (<span id="volumeValue">80%</span>)</label>
-          <input id="volumeInput" type="range" min="0" max="100" step="1" value="80" />
         </div>
 
         <button id="startButton" disabled>Start session</button>
@@ -121,8 +115,6 @@ export function renderApp(root: HTMLElement): UiRefs {
     equalInput: query<HTMLInputElement>(root, '#equalInput'),
     equalValue: query<HTMLElement>(root, '#equalValue'),
     durationSelect: query<HTMLSelectElement>(root, '#durationSelect'),
-    volumeInput: query<HTMLInputElement>(root, '#volumeInput'),
-    volumeValue: query<HTMLElement>(root, '#volumeValue'),
     preloadStatus: query<HTMLElement>(root, '#preloadStatus'),
     startButton: query<HTMLButtonElement>(root, '#startButton'),
     homeSection: query<HTMLElement>(root, '#homeSection'),

@@ -1,4 +1,241 @@
 PRD v2 - Breathing Session PWA (iOS-first, no backend)
+
+UPDATE (v2.3, February 23, 2026) - ACTIVE OVERRIDES
+
+This section supersedes v2.2/v2.1 and any conflicting statements below.
+
+1) Product naming
+
+User-facing product name is:
+Iki Gong
+
+Apply consistently in:
+- app UI title
+- browser document title
+- PWA manifest (name/short_name)
+- Media Session metadata
+- README/rules/docs
+
+2) Volume policy
+
+In-app volume control is removed from MVP.
+
+Do not expose volume slider in UI.
+
+Session audio element volume is fixed at 100% (`audio.volume = 1`).
+
+User controls loudness via device/system volume only.
+
+Legacy storage key `masterVolume` must be removed during settings load.
+
+3) Brandbook compliance (mandatory visual layer)
+
+Source:
+/Users/vpavlin/PycharmProjects/breeth/brandbook.txt
+
+Required constraints:
+- no gradients
+- no glassmorphism
+- no heavy shadows
+- no pure white #FFFFFF
+- no pure black #000000
+- one sans-serif family, max two weights (regular/medium)
+- spacing/radius/button sizing must follow brandbook ranges
+
+4) PWA cache rollout
+
+When app shell branding/styling changes, bump service worker cache version
+to force fresh shell assets on iOS PWA updates.
+
+UPDATE (v2.2, February 23, 2026) - ACTIVE OVERRIDES
+
+This section supersedes v2.1 and any conflicting statements below.
+
+1) Modes and UI
+
+Mode types are:
+
+Equal (N-N) with N selectable from 4 to 7
+
+Box 4-4-4-4
+
+4-7-8
+
+Equal slider applies only to Equal mode.
+
+2) Durations
+
+Only:
+
+5, 10, 20 minutes
+
+3) Active track set (required for validation)
+
+18 files total:
+
+Equal:
+N=4,5,6,7 x durations 5/10/20 = 12 files
+
+Box:
+3 files
+
+4-7-8:
+3 files
+
+Legacy files (for 15/25/30 and even-88) may remain in repository but are excluded from active validation.
+
+4) Audio source files (authoritative)
+
+Inhale sample:
+/Users/vpavlin/PycharmProjects/breeth/bowls_3_1.mp3
+
+Hold sample:
+/Users/vpavlin/PycharmProjects/breeth/bowls_3_2.mp3
+
+Exhale sample:
+/Users/vpavlin/PycharmProjects/breeth/bowls_3_3.mp3
+
+5) Phase rendering rule (strict)
+
+Each phase is filled by its assigned sample for the full phase duration:
+
+if sample longer than phase -> trim
+
+if sample shorter than phase -> loop and trim
+
+No per-second ticking events in hold phases.
+
+6) Mode phase assignment
+
+Equal N-N:
+inhale N sec -> bowls_3_1
+exhale N sec -> bowls_3_3
+
+Box 4-4-4-4:
+inhale 4 sec -> bowls_3_1
+hold 4 sec -> bowls_3_2
+exhale 4 sec -> bowls_3_3
+hold 4 sec -> bowls_3_2
+
+4-7-8:
+inhale 4 sec -> bowls_3_1
+hold 7 sec -> bowls_3_2
+exhale 8 sec -> bowls_3_3
+
+7) Storage normalization
+
+equalSeconds must be clamped to 4..7
+
+duration must be normalized to nearest of {5,10,20}, tie rule: 15 -> 20
+
+legacy selectedMode migration remains required.
+
+8) Validation gates
+
+Before release and in CI:
+
+validate required active set (18 tracks)
+
+validate durations
+
+validate active-set size thresholds
+
+UPDATE (v2.1, February 23, 2026) - HISTORICAL (SUPERSEDED BY v2.2)
+
+This section supersedes any conflicting statements below.
+If a lower section mentions "3 modes", "18 tracks", "4-4 only", or legacy storage fields,
+the v2.1 overrides are the source of truth.
+
+The following sections are explicitly overridden by v2.1:
+2 (In scope mode list), 4.D (fixed modes), 5.4 (track count/modes),
+5.7 (storage keys), 7.1 (mode labels), 8.3 (cycle set),
+8.4 (asset size target wording), 8.5 (required naming list),
+12.1 (functional acceptance mode count), 13 (test matrix examples), 14.2 (audio track count).
+
+1) Modes and UI
+
+Mode types are now:
+
+Equal (N-N) with N selectable from 4 to 8 via slider
+
+Box 4-4-4-4
+
+4-7-8
+
+Equal slider applies only to Equal mode.
+
+2) Track set size
+
+Session tracks are now 42 files total (not 18):
+
+Equal:
+N=4,5,6,7,8 x durations 5/10/15/20/25/30 = 30 files
+
+Box:
+6 files
+
+4-7-8:
+6 files
+
+3) Filename convention
+
+Equal:
+even-44-5m.mp3 ... even-88-30m.mp3
+
+Box:
+box-4444-5m.mp3 ... box-4444-30m.mp3
+
+4-7-8:
+relax-478-5m.mp3 ... relax-478-30m.mp3
+
+4) Equal mode audio behavior
+
+For Equal N-N:
+
+Inhale gong at cycle start
+
+Exhale gong at +N seconds
+
+No tick sounds
+
+5) Persistence and migration
+
+Current storage model:
+selectedModeType + equalSeconds + selectedDuration + masterVolume
+
+Legacy selectedMode migration must remain supported:
+even44 -> modeType=equal, equalSeconds=4
+box4444 -> modeType=box4444
+relax478 -> modeType=relax478
+
+6) Validation gates
+
+Before release and in CI:
+
+validate expected track set (42 files)
+
+validate durations
+
+validate asset size thresholds
+
+7) Equal mode timing definition (normative)
+
+Equal mode uses selectable N where N in {4,5,6,7,8}.
+
+Cycle length = 2N seconds:
+
+0-N inhale
+
+N-2N exhale
+
+Events:
+
+t=cycleStart inhale gong
+
+t=cycleStart+N exhale gong
+
+No ticks in Equal mode.
+
 1) Product overview
 Goal
 
@@ -1126,4 +1363,3 @@ Best-effort lock-screen playback on iPhone
 Clean handling of pause/resume/interruptions/errors
 
 Visual polish is secondary. Reliability and simplicity are primary.
-
