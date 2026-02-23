@@ -1,0 +1,156 @@
+:root {
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color: #052e2b;
+  background: radial-gradient(circle at top, #dcfce7 0%, #99f6e4 45%, #ccfbf1 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 20px 16px 28px;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(5px);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 14px 36px rgba(6, 78, 59, 0.16);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.9rem;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  margin-top: 4px;
+  color: #115e59;
+}
+
+.label {
+  font-weight: 700;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+select,
+input[type='range'],
+button {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #5eead4;
+  padding: 10px 12px;
+  font-size: 1rem;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  font-weight: 700;
+  color: #ecfeff;
+  background: linear-gradient(135deg, #0f766e, #0ea5a4);
+}
+
+button.secondary {
+  background: #0f766e;
+}
+
+button.ghost {
+  background: #134e4a;
+}
+
+button[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.row button {
+  flex: 1;
+}
+
+.state {
+  margin-top: 8px;
+  font-weight: 700;
+  color: #115e59;
+}
+
+.error {
+  margin-top: 8px;
+  color: #9f1239;
+  font-weight: 700;
+}
+
+.muted {
+  color: #155e75;
+  font-size: 0.92rem;
+}
+
+.hidden {
+  display: none;
+}
+
+.metrics {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  margin: 14px 0;
+}
+
+.metric {
+  border: 1px solid #5eead4;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f0fdfa;
+}
+
+.metric .title {
+  font-size: 0.82rem;
+  color: #0f766e;
+}
+
+.metric .value {
+  margin-top: 2px;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.guide ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+@media (max-width: 520px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+}
