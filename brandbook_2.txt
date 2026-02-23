@@ -1,0 +1,324 @@
+============================================================
+IKI GONG
+Brand System v2.0 - Vanilla PWA Ready
+1. СИСТЕМНЫЕ ОГРАНИЧЕНИЯ
+
+Дизайн должен учитывать:
+
+Нет React/Vue state animation
+
+Нет CSS framework
+
+Нет сложных компонентных библиотек
+
+Статический деплой
+
+Минимальный JS
+
+Следствие:
+
+Минимум сложных визуальных эффектов
+
+Без glassmorphism
+
+Без градиентов
+
+Без heavy shadow stacks
+
+Без pure white #FFFFFF
+
+Без pure black #000000
+
+Стиль должен быть реализуем чистым CSS.
+
+2. DESIGN TOKENS (ОБЯЗАТЕЛЬНО В styles.css)
+2.1 Цвета
+:root {
+
+/* Light */
+--bg: #F4F2EC;
+--surface: #EAE6DD;
+--text: #1F1F1C;
+--text-muted: #6B6A63;
+--accent: #7C8A7A;
+--accent-soft: #8F9C8F;
+
+/* Dark */
+--bg-dark: #1E1D1A;
+--surface-dark: #2A2925;
+--text-dark: #E6E2D8;
+--text-muted-dark: rgba(230,226,216,0.72);
+--stroke-dark: rgba(255,255,255,0.12);
+
+}
+
+Контраст минимум WCAG AA.
+
+2.2 Радиусы
+--radius-card: 20px;
+--radius-control: 16px;
+--radius-pill: 999px;
+
+Радиус не должен быть слишком округлым.
+Не iOS bubbly.
+
+2.3 Отступы
+--space-1: 8px;
+--space-2: 12px;
+--space-3: 16px;
+--space-4: 24px;
+--space-5: 32px;
+--space-6: 40px;
+
+Главный ритм:
+
+24px — основной
+
+32px — крупные секции
+
+3. ТИПОГРАФИКА
+
+1 шрифт. 2 веса.
+
+Recommended:
+
+Inter
+или
+
+System UI stack
+
+Scale:
+
+H1 - 30px / 1.1 / Medium
+H2 - 22px / 1.2 / Medium
+Body - 16px / 1.45 / Regular
+Caption - 14px / 1.35 / Regular
+
+Без uppercase.
+Без letter-spacing > 0.2px.
+
+4. КОМПОНЕНТЫ
+4.1 Кнопки
+
+Высота: 52px
+Padding-x: 24px
+Radius: 16px
+
+Primary
+
+background: accent
+
+text: bg
+
+no shadow
+
+hover: чуть светлее
+
+active: scale 0.98
+
+Secondary
+
+border 1px
+
+background transparent
+
+text accent
+
+Ghost
+
+без границы
+
+muted text
+
+Никаких glow-эффектов.
+
+4.2 Range
+
+Track: 4px
+Thumb: 22px
+Hit area: 44px
+Scale on drag: 1.04
+Duration: 140ms
+
+Активная часть трека accent.
+Inactive — muted.
+
+4.3 Select
+
+Высота: 52px
+Padding-x: 24px
+Chevron: 16px
+Distance text-chevron: 16px
+
+Border: 1px muted
+Menu animation: fade + scale(0.98 → 1)
+Duration: 160ms
+
+Без native select на iOS.
+
+4.4 Карточки
+
+Использовать минимально.
+
+Radius 20px
+
+Padding 24px
+
+Без вложенных рамок
+
+Лучше разделять пустотой.
+
+4.5 Сообщения
+
+Muted:
+
+text-muted
+
+Error:
+
+мягкий тёплый красный (не алый)
+
+без ярких warning баннеров
+
+State message (“Session ready.”):
+
+caption
+
+muted
+
+margin-top 12px
+
+5. MOTION RULES
+
+Длительности:
+
+micro: 120ms
+
+standard: 160ms
+
+screen fade: 200ms
+
+Easing:
+
+ease-out
+
+Запрещено:
+
+bounce
+
+spring physics
+
+300ms+ анимации
+
+параллакс
+
+Home → Session:
+
+fade
+
+не slide
+
+Фазы дыхания:
+
+анимация синхронизирована с audio
+
+не через JS таймер
+
+6. СТРУКТУРА ЭКРАНОВ
+Home
+
+Заголовок
+
+Subtitle
+
+Mode select
+
+Rhythm slider
+
+Duration select
+
+Primary CTA
+
+State message
+
+Без лишних контейнеров.
+
+Session
+
+Центрированный круг
+
+Phase label
+
+Таймер
+
+Минимальная кнопка pause
+
+Никакой статистики во время сессии.
+
+7. CONTENT STYLE
+
+Tone:
+
+спокойный
+
+короткий
+
+без императивов
+
+Правильно:
+Begin
+Pause
+Complete
+
+Неправильно:
+Take control of your life
+Unlock your potential
+
+Никаких восклицаний.
+
+8. PWA СПЕЦИФИКА
+
+manifest.webmanifest:
+
+background_color = --bg
+
+theme_color = --bg
+
+display = standalone
+
+index.html:
+
+meta theme-color должен совпадать
+
+font preload обязателен
+
+Service worker:
+
+не кэшировать aggressively audio
+
+обновление должно быть predictable
+
+9. КРИТИЧЕСКИЕ ОШИБКИ
+
+Слишком много border
+
+Слишком тёмный контраст
+
+Thumb < 20px
+
+Padding < 20px
+
+Native iOS select
+
+Яркие цвета
+
+Тяжёлые тени
+
+10. ОЩУЩЕНИЕ ПРОДУКТА
+
+Если пользователь видит:
+
+“UI” → плохо
+“Пустоту и спокойствие” → правильно
+
+Приложение должно исчезать.

@@ -33,6 +33,7 @@ let selectedEqualSeconds: EqualSeconds = settings.equalSeconds;
 let selectedDuration: DurationMin = settings.durationMin;
 let selectedTrackSrc = '';
 let rafId = 0;
+type PhaseLabel = 'Begin' | 'Inhale' | 'Hold' | 'Exhale' | 'Pause' | 'Complete';
 
 function setEqualFieldVisibility(): void {
   ui.equalField.classList.toggle('hidden', selectedModeType !== 'equal');
@@ -42,9 +43,13 @@ function setEqualValue(): void {
   ui.equalValue.textContent = `${selectedEqualSeconds}-${selectedEqualSeconds}`;
 }
 
-function setSessionLabels(): void {
-  ui.sessionMode.textContent = getModeLabel(selectedModeType, selectedEqualSeconds);
-  ui.sessionDuration.textContent = `${selectedDuration} min`;
+function updateEqualRangeProgress(): void {
+  const min = Number(ui.equalInput.min);
+  const max = Number(ui.equalInput.max);
+  const value = Number(ui.equalInput.value);
+  const range = Math.max(1, max - min);
+  const percent = ((value - min) / range) * 100;
+  ui.equalInput.style.setProperty('--range-progress', `${Math.max(0, Math.min(100, percent))}%`);
 }
 
 function getTrackSrc(modeType: ModeType, equalSeconds: EqualSeconds, durationMin: DurationMin): string {
@@ -85,6 +90,20 @@ function clearMessages(): void {
   ui.interruptionMessage.textContent = '';
 }
 
+function setPhaseLabel(label: PhaseLabel): void {
+  ui.phaseLabel.textContent = label;
+
+  const classByLabel: Record<PhaseLabel, string> = {
+    Begin: 'phase-begin',
+    Inhale: 'phase-inhale',
+    Hold: 'phase-hold',
+    Exhale: 'phase-exhale',
+    Pause: 'phase-pause',
+    Complete: 'phase-complete',
+  };
+  ui.breathCircle.className = `breath-circle ${classByLabel[label]}`;
+}
+
 function updatePauseResumeButton(state: 'playing' | 'paused' | 'other'): void {
   if (state === 'playing') {
     ui.pauseResumeButton.textContent = 'Pause';
@@ -92,7 +111,7 @@ function updatePauseResumeButton(state: 'playing' | 'paused' | 'other'): void {
     return;
   }
   if (state === 'paused') {
-    ui.pauseResumeButton.textContent = 'Resume';
+    ui.pauseResumeButton.textContent = 'Begin';
     ui.pauseResumeButton.disabled = false;
     return;
   }
@@ -100,8 +119,43 @@ function updatePauseResumeButton(state: 'playing' | 'paused' | 'other'): void {
   ui.pauseResumeButton.disabled = true;
 }
 
-function updateRestartButtonEnabled(enabled: boolean): void {
-  ui.restartButton.disabled = !enabled;
+function setStartAgainVisible(visible: boolean): void {
+  ui.startAgainButton.classList.toggle('hidden', !visible);
+}
+
+function getCurrentPhaseLabel(currentTimeSec: number): PhaseLabel {
+  if (currentTimeSec < 0) {
+    return 'Begin';
+  }
+
+  if (selectedModeType === 'equal') {
+    const cycleSec = selectedEqualSeconds * 2;
+    const offsetSec = currentTimeSec % cycleSec;
+    return offsetSec < selectedEqualSeconds ? 'Inhale' : 'Exhale';
+  }
+
+  if (selectedModeType === 'box4444') {
+    const offsetSec = currentTimeSec % 16;
+    if (offsetSec < 4) {
+      return 'Inhale';
+    }
+    if (offsetSec < 8) {
+      return 'Hold';
+    }
+    if (offsetSec < 12) {
+      return 'Exhale';
+    }
+    return 'Hold';
+  }
+
+  const offsetSec = currentTimeSec % 19;
+  if (offsetSec < 4) {
+    return 'Inhale';
+  }
+  if (offsetSec < 11) {
+    return 'Hold';
+  }
+  return 'Exhale';
 }
 
 async function isTrackCached(src: string): Promise<boolean> {
@@ -163,7 +217,6 @@ function preloadSelectedTrack(): void {
   ui.startButton.disabled = true;
   setEqualFieldVisibility();
   setEqualValue();
-  setSessionLabels();
   setMediaSessionMetadata();
 }
 
@@ -190,11 +243,12 @@ ui.modeSelect.value = selectedModeType;
 ui.equalInput.value = String(selectedEqualSeconds);
 ui.durationSelect.value = String(selectedDuration);
 updatePauseResumeButton('other');
-updateRestartButtonEnabled(false);
 updateRemaining(0);
 setEqualFieldVisibility();
 setEqualValue();
-setSessionLabels();
+updateEqualRangeProgress();
+setPhaseLabel('Begin');
+setStartAgainVisible(false);
 
 ui.modeSelect.addEventListener('change', () => {
   const candidate = ui.modeSelect.value;
@@ -215,6 +269,7 @@ ui.equalInput.addEventListener('input', () => {
 
   selectedEqualSeconds = value as EqualSeconds;
   saveSettings({ equalSeconds: selectedEqualSeconds });
+  updateEqualRangeProgress();
   preloadSelectedTrack();
 });
 
@@ -254,33 +309,22 @@ ui.pauseResumeButton.addEventListener('click', () => {
   }
 });
 
-ui.restartButton.addEventListener('click', () => {
-  clearMessages();
-  ui.completionActions.classList.add('hidden');
-  void player.restart();
-});
-
 ui.stopButton.addEventListener('click', () => {
   player.stop();
   stopCountdownLoop();
   setScreenMode(false);
+  setPhaseLabel('Begin');
+  setStartAgainVisible(false);
 });
 
 ui.startAgainButton.addEventListener('click', () => {
   clearMessages();
-  ui.completionActions.classList.add('hidden');
-  if (player.getState() === 'completed') {
+  setStartAgainVisible(false);
+  if (player.getState() === 'completed' || player.getState() === 'error') {
     void player.restart();
     return;
   }
   void startSelectedSession();
-});
-
-ui.backButton.addEventListener('click', () => {
-  player.stop();
-  stopCountdownLoop();
-  setScreenMode(false);
-  ui.completionActions.classList.add('hidden');
 });
 
 player.addEventListener('trackstatus', (event) => {
@@ -316,17 +360,18 @@ player.addEventListener('trackstatus', (event) => {
 player.addEventListener('timeupdate', (event) => {
   const detail = (event as CustomEvent<TimeUpdateDetail>).detail;
   updateRemaining(detail.remainingSec);
+  if (player.getState() === 'playing') {
+    setPhaseLabel(getCurrentPhaseLabel(detail.currentTimeSec));
+  }
 });
 
 player.addEventListener('statechange', (event) => {
   const detail = (event as CustomEvent<PlayerStateChangeDetail>).detail;
 
-  ui.playbackState.textContent = detail.state[0].toUpperCase() + detail.state.slice(1);
-  ui.completionActions.classList.add('hidden');
-
   if (detail.state === 'loading') {
     updatePauseResumeButton('other');
-    updateRestartButtonEnabled(false);
+    setStartAgainVisible(false);
+    setPhaseLabel('Begin');
     ui.interruptionMessage.textContent = 'Loading selected session...';
     return;
   }
@@ -334,47 +379,47 @@ player.addEventListener('statechange', (event) => {
   if (detail.state === 'playing') {
     clearMessages();
     updatePauseResumeButton('playing');
-    updateRestartButtonEnabled(true);
+    setStartAgainVisible(false);
+    setPhaseLabel(getCurrentPhaseLabel(player.getSnapshot().currentTimeSec));
     runCountdownLoop();
     return;
   }
 
   if (detail.state === 'paused') {
     updatePauseResumeButton('paused');
-    updateRestartButtonEnabled(true);
     stopCountdownLoop();
+    setPhaseLabel('Pause');
     ui.interruptionMessage.textContent = detail.interrupted
       ? 'Playback was interrupted by the system or another media source.'
-      : 'Playback paused.';
-    ui.playbackState.textContent = detail.interrupted ? 'Interrupted' : 'Paused';
+      : 'Paused.';
     return;
   }
 
   if (detail.state === 'completed') {
     updatePauseResumeButton('other');
-    updateRestartButtonEnabled(true);
     stopCountdownLoop();
-    ui.interruptionMessage.textContent = 'Session complete.';
-    ui.completionActions.classList.remove('hidden');
+    setPhaseLabel('Complete');
+    ui.interruptionMessage.textContent = 'Complete.';
+    setStartAgainVisible(true);
     return;
   }
 
   if (detail.state === 'error') {
     updatePauseResumeButton('other');
-    updateRestartButtonEnabled(true);
     stopCountdownLoop();
+    setPhaseLabel('Pause');
     ui.errorMessage.textContent =
       detail.message ?? 'Could not load session audio. Check connection and try again.';
-    ui.completionActions.classList.remove('hidden');
+    setStartAgainVisible(true);
     setScreenMode(true);
     return;
   }
 
   if (detail.state === 'idle') {
     updatePauseResumeButton('other');
-    updateRestartButtonEnabled(false);
     stopCountdownLoop();
-    ui.playbackState.textContent = 'Idle';
+    setPhaseLabel('Begin');
+    setStartAgainVisible(false);
     return;
   }
 });
@@ -382,6 +427,9 @@ player.addEventListener('statechange', (event) => {
 document.addEventListener('visibilitychange', () => {
   const snapshot = player.getSnapshot();
   updateRemaining(snapshot.remainingSec);
+  if (player.getState() === 'playing') {
+    setPhaseLabel(getCurrentPhaseLabel(snapshot.currentTimeSec));
+  }
 });
 
 preloadSelectedTrack();
