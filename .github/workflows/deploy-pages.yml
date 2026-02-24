@@ -44,6 +44,9 @@ jobs:
       - name: Build
         run: BASE_PATH=/${{ github.event.repository.name }}/ npm run build
 
+      - name: Strip records from dist
+        run: npm run dist:strip-records
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

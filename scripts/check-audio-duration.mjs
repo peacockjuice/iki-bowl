@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { getExpectedTrackFilenames } from './audio-spec.mjs';
 
 const audioDir = join(process.cwd(), 'public', 'audio');
-const toleranceSec = 0.12;
+const maxTailSec = 35;
 
 if (!existsSync(audioDir)) {
   console.error('Missing public/audio directory');
@@ -16,14 +16,6 @@ const files = getExpectedTrackFilenames();
 let hasFailure = false;
 
 for (const file of files) {
-  const match = file.match(/-(\d+)m\.mp3$/);
-  if (!match) {
-    hasFailure = true;
-    console.error(`Cannot parse duration from filename: ${file}`);
-    continue;
-  }
-
-  const expectedSec = Number(match[1]) * 60;
   const path = join(audioDir, file);
 
   const probe = spawnSync(
@@ -39,13 +31,28 @@ for (const file of files) {
   }
 
   const actualSec = Number.parseFloat(probe.stdout.trim());
-  const delta = Math.abs(actualSec - expectedSec);
-  if (!Number.isFinite(actualSec) || delta > toleranceSec) {
+  if (!Number.isFinite(actualSec)) {
     hasFailure = true;
-    console.error(`${file}: expected ${expectedSec}s, actual ${actualSec.toFixed(3)}s, delta ${delta.toFixed(3)}s`);
-  } else {
-    console.log(`${file}: OK (${actualSec.toFixed(3)}s)`);
+    console.error(`${file}: invalid duration`);
+    continue;
   }
+
+  const match = file.match(/-(\d+)m\.mp3$/);
+  if (!match) {
+    hasFailure = true;
+    console.error(`Cannot parse duration from filename: ${file}`);
+    continue;
+  }
+
+  const targetSec = Number(match[1]) * 60;
+  const upperSec = targetSec + maxTailSec;
+  if (actualSec < targetSec || actualSec > upperSec) {
+    hasFailure = true;
+    console.error(`${file}: expected ${targetSec}-${upperSec}s (tail window), actual ${actualSec.toFixed(3)}s`);
+    continue;
+  }
+
+  console.log(`${file}: OK(tail) (${actualSec.toFixed(3)}s)`);
 }
 
 if (hasFailure) {

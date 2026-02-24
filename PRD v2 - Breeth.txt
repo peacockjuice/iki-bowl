@@ -1,5 +1,87 @@
 PRD v2 - Breathing Session PWA (iOS-first, no backend)
 
+UPDATE (v2.5, February 24, 2026) - ACTIVE OVERRIDES
+
+This section supersedes v2.4/v2.3/v2.2/v2.1 and any conflicting statements below.
+
+1) Audio source-of-truth
+
+Authoritative source set for all active tracks is:
+/Users/vpavlin/PycharmProjects/breeth/public/audio/records
+
+2) Active track replacement policy
+
+All 18 active targets (Equal 4/5/6/7 x 5/10/20, Box 5/10/20, 4-7-8 5/10/20)
+must be copied from `records` into top-level `public/audio`.
+
+No synthesis fallback is allowed.
+
+If any required source file in `records` is missing, generation must fail.
+
+3) Legacy cleanup policy
+
+Legacy top-level tracks (15/25/30 minute set and even-88 variants) are removed.
+
+Top-level `public/audio` may contain only active expected tracks.
+
+4) Countdown behavior with tails
+
+For all modes and all durations:
+- countdown target is selected duration (`5/10/20`) in seconds
+- UI reaches 00:00 at target
+- UI stays at 00:00 while tail audio plays
+- session completes only on actual audio ended event
+
+5) Validation gates
+
+Set check:
+- fail on missing expected tracks
+- fail on extra top-level `*.mp3`
+
+Duration check:
+- pass window for every active track is `targetSec .. targetSec + 35`
+
+Size gate:
+- warning threshold: 520 MB
+- fail threshold: 600 MB
+
+6) Deploy artifact rule
+
+`public/audio/records` remains in repository as source-of-truth but must not be
+included in final deploy artifact (`dist`).
+
+UPDATE (v2.4, February 24, 2026) - ACTIVE OVERRIDES
+
+This section supersedes v2.3/v2.2/v2.1 and any conflicting statements below.
+
+1) Manual Equal 5m masters (authoritative)
+
+The following files are the source of truth:
+
+/Users/vpavlin/PycharmProjects/breeth/bowls_4_4_5.mp3 -> public/audio/even-44-5m.mp3
+/Users/vpavlin/PycharmProjects/breeth/bowls_5_5_5.mp3 -> public/audio/even-55-5m.mp3
+/Users/vpavlin/PycharmProjects/breeth/bowls_6_6_5.mp3 -> public/audio/even-66-5m.mp3
+/Users/vpavlin/PycharmProjects/breeth/bowls_7_7_5.mp3 -> public/audio/even-77-5m.mp3
+
+Generator must copy these files directly and must fail if any source is missing.
+
+2) Countdown behavior for manual tails (current phase)
+
+For Equal mode with selected duration 5 minutes:
+- countdown target is fixed at 300 seconds
+- after 300 seconds UI shows 00:00 until audio file ends
+- session state still moves to completed only on actual audio ended event
+
+3) Duration validation for manual Equal 5m
+
+Allowed duration window for:
+even-44-5m.mp3, even-55-5m.mp3, even-66-5m.mp3, even-77-5m.mp3
+
+is:
+300..330 seconds
+
+All other required tracks keep strict duration validation by target minute length.
+
 UPDATE (v2.3, February 23, 2026) - ACTIVE OVERRIDES
 
 This section supersedes v2.2/v2.1 and any conflicting statements below.

@@ -26,11 +26,12 @@ npm run preview
 
 ## Audio pipeline
 
-Source samples used by generator:
+Master source-of-truth: `/Users/vpavlin/PycharmProjects/breeth/public/audio/records`
 
-- inhale: `/Users/vpavlin/PycharmProjects/breeth/bowls_3_1.mp3`
-- hold: `/Users/vpavlin/PycharmProjects/breeth/bowls_3_2.mp3`
-- exhale: `/Users/vpavlin/PycharmProjects/breeth/bowls_3_3.mp3`
+`npm run generate:audio` now works in copy-only mode:
+- copies the required 18 tracks from `records` into `public/audio`
+- fails if any required source file is missing
+- removes old top-level mp3 tracks before copying
 
 Generate active set:
 
@@ -48,8 +49,8 @@ npm run check:assets
 `check:assets` validates:
 
 - required active set exists (`18` tracks)
-- durations are correct
-- active-set size gate (warn `>220MB`, fail `>260MB`)
+- durations are correct with tail window (`target..target+35s`)
+- active-set size gate (warn `>520MB`, fail `>600MB`)
 
 Naming (active set):
 
@@ -79,7 +80,9 @@ Workflow: `.github/workflows/deploy-pages.yml`
 
 - iOS background behavior varies by device/iOS/settings
 - offline works only for cached tracks
-- audio uses constrained bitrate (`~40 kbps mono`) to control repository size
+- audio set is larger due to manual high-quality recordings
+- countdown reaches `00:00` at selected `5/10/20` target and stays `00:00` while tail audio finishes
+- `public/audio/records` is kept in repo as source-of-truth but stripped from `dist` before deploy
 
 ## Visual direction (brandbook)
 

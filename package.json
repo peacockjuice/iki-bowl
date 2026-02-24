@@ -13,7 +13,8 @@
     "check:audio:set": "node scripts/check-audio-set.mjs",
     "check:audio:size": "node scripts/check-audio-size.mjs",
     "check:branding": "node scripts/check-branding.mjs",
-    "check:assets": "npm run check:audio:set && npm run check:audio && npm run check:audio:size"
+    "check:assets": "npm run check:audio:set && npm run check:audio && npm run check:audio:size",
+    "dist:strip-records": "node scripts/strip-records-from-dist.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

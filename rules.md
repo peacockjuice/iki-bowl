@@ -10,6 +10,8 @@ This file defines implementation invariants for contributors. Follow these rules
 
 2. `<audio>` is the runtime source of truth.
 - Countdown must derive from `audio.currentTime` and `audio.duration`.
+- UI countdown target is selected duration (`5/10/20`) for all modes.
+- After target time, UI stays at `00:00` while tail audio continues until `ended`.
 - UI can pause rendering in background, but must resync on foreground.
 
 3. Explicit player state machine must remain intact.
@@ -42,19 +44,17 @@ This file defines implementation invariants for contributors. Follow these rules
 - Box: `box-4444-<duration>m.mp3`.
 - 4-7-8: `relax-478-<duration>m.mp3`.
 
-3. Source samples for generation:
-- inhale: `bowls_3_1.mp3`
-- hold: `bowls_3_2.mp3`
-- exhale: `bowls_3_3.mp3`
+3. Source-of-truth for all active tracks:
+- `public/audio/records`
 
-4. Phase fill rule:
-- Fill entire phase duration with the assigned sample.
-- If sample is longer, trim.
-- If sample is shorter, loop and trim to exact phase duration.
+4. Generation policy:
+- `generate:audio` is copy-only from `public/audio/records` by deterministic filename mapping.
+- No synthesis fallback is allowed.
+- Script must fail if any required record source file is missing.
 
 5. Legacy policy:
-- Older track files (`15/25/30`, `even-88`) are kept in repo.
-- They are not part of active validation and must not affect app UI behavior.
+- Legacy active-track extras in top-level `public/audio` are not allowed.
+- `check:audio:set` must fail on any extra top-level `*.mp3`.
 
 ## 4. Storage and migration rules
 
@@ -107,8 +107,8 @@ npm run build
 
 `check:assets` includes:
 - active set presence check
-- duration validation
-- size gate (warn > 220MB, fail > 260MB)
+- duration validation (`target..target+35s` for all active tracks)
+- size gate (warn > 520MB, fail > 600MB)
 
 ## 8. Deployment rules
 
@@ -131,3 +131,7 @@ npm run build
 - Regenerate audio assets
 - Re-run `check:assets`
 - Confirm size gate impact
+
+3. If source files in `public/audio/records` are updated:
+- run `npm run generate:audio`
+- ensure `public/audio` contains only the 18 active top-level tracks

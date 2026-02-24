@@ -1,15 +1,21 @@
 export const MODE_TYPES = {
   equal: {
     key: 'equal',
-    label: 'Equal (N-N)',
+    label: 'Buteyko (N-N)',
+    description:
+      'Retrains breathing volume downward; may reduce asthma reliever use in some people.',
   },
   box4444: {
     key: 'box4444',
-    label: 'Box 4-4-4-4',
+    label: 'Box (4-4-4-4)',
+    description:
+      'Paced breathing with holds; helps quickly reduce stress and steady breathing rhythm.',
   },
   relax478: {
     key: 'relax478',
-    label: '4-7-8',
+    label: 'Dr. Weil (4-7-8)',
+    description:
+      'Long exhale plus a pause; used to promote relaxation and help with sleep onset.',
   },
 } as const;
 

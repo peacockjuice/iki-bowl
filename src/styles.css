@@ -24,6 +24,7 @@
   --motion-micro: 120ms;
   --motion-standard: 160ms;
   --motion-screen: 200ms;
+  --motion-breath: 1000ms;
   font-family: 'Inter', sans-serif;
   font-weight: 400;
   color: var(--text);
@@ -108,6 +109,35 @@ h2 {
   font-size: 14px;
   line-height: 1.35;
   color: var(--text);
+}
+
+.mode-description {
+  margin-bottom: var(--space-2);
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.range-labels {
+  margin-top: var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.range-label-start {
+  text-align: left;
+}
+
+.range-label-center {
+  text-align: center;
+}
+
+.range-label-end {
+  text-align: right;
 }
 
 .select-wrap {
@@ -283,16 +313,22 @@ button[disabled] {
   width: 170px;
   height: 170px;
   margin: 0 auto var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-pill);
   border: 3px solid var(--accent);
-  transition: transform var(--motion-standard) ease-out, border-color var(--motion-standard) ease-out,
-    opacity var(--motion-standard) ease-out;
+  transition: transform var(--motion-breath) cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-color var(--motion-breath) cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity var(--motion-breath) cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .phase-label {
   font-size: 22px;
   line-height: 1.2;
   font-weight: 500;
+  text-align: center;
+  color: var(--text);
 }
 
 .remaining-value {

@@ -20,9 +20,11 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-const legacyExtraCount = actual.filter((name) => !expected.includes(name)).length;
-if (legacyExtraCount > 0) {
-  console.log(`Audio set OK: ${expected.length} active tracks present (${legacyExtraCount} legacy extras kept).`);
-} else {
-  console.log(`Audio set OK: ${expected.length} active tracks present.`);
+const extra = actual.filter((name) => !expected.includes(name));
+if (extra.length > 0) {
+  console.error('Unexpected top-level audio tracks found (legacy not allowed):');
+  extra.forEach((name) => console.error(`  - ${name}`));
+  process.exit(1);
 }
+
+console.log(`Audio set OK: ${expected.length} active tracks present, no extras.`);

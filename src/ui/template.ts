@@ -1,9 +1,12 @@
 export interface UiRefs {
-  modeSelect: HTMLSelectElement;
+  modeInput: HTMLInputElement;
+  modeValue: HTMLElement;
+  modeDescription: HTMLElement;
   equalField: HTMLElement;
   equalInput: HTMLInputElement;
   equalValue: HTMLElement;
-  durationSelect: HTMLSelectElement;
+  durationInput: HTMLInputElement;
+  durationValue: HTMLElement;
   preloadStatus: HTMLElement;
   startButton: HTMLButtonElement;
   homeSection: HTMLElement;
@@ -34,24 +37,30 @@ export function renderApp(root: HTMLElement): UiRefs {
         <p class="subtitle">Quiet breathing sessions for iPhone lock-screen use.</p>
 
         <div class="field">
-          <label class="label" for="modeSelect">Breathing mode</label>
-          <div class="select-wrap">
-            <select id="modeSelect"></select>
+          <label class="label" for="modeInput">
+            Breathing mode : <span id="modeValue">Buteyko (N-N)</span>
+          </label>
+          <p id="modeDescription" class="mode-description"></p>
+          <input id="modeInput" type="range" min="0" max="2" step="1" value="1" />
+          <div class="range-labels" aria-hidden="true">
+            <span class="range-label-start">Box (4-4-4-4)</span>
+            <span class="range-label-center">Buteyko (N-N)</span>
+            <span class="range-label-end">Dr. Weil (4-7-8)</span>
           </div>
         </div>
 
         <div id="equalField" class="field">
           <label class="label" for="equalInput">
-            Equal rhythm N-N (<span id="equalValue">4-4</span>)
+            Buteyko rhytm : <span id="equalValue">4-4</span>
           </label>
           <input id="equalInput" type="range" min="4" max="7" step="1" value="4" />
         </div>
 
         <div class="field">
-          <label class="label" for="durationSelect">Session duration</label>
-          <div class="select-wrap">
-            <select id="durationSelect"></select>
-          </div>
+          <label class="label" for="durationInput">
+            Session duration : <span id="durationValue">10 min</span>
+          </label>
+          <input id="durationInput" type="range" min="0" max="2" step="1" value="1" />
         </div>
 
         <button id="startButton" disabled>Begin</button>
@@ -59,8 +68,9 @@ export function renderApp(root: HTMLElement): UiRefs {
       </section>
 
       <section id="sessionSection" class="card screen-card session-screen hidden">
-        <div id="breathCircle" class="breath-circle phase-begin" aria-hidden="true"></div>
-        <p id="phaseLabel" class="phase-label">Begin</p>
+        <div id="breathCircle" class="breath-circle phase-begin">
+          <p id="phaseLabel" class="phase-label">Begin</p>
+        </div>
         <p id="remainingValue" class="remaining-value">00:00</p>
         <p id="interruptionMessage" class="muted"></p>
         <p id="errorMessage" class="error"></p>
@@ -76,11 +86,14 @@ export function renderApp(root: HTMLElement): UiRefs {
   `;
 
   return {
-    modeSelect: query<HTMLSelectElement>(root, '#modeSelect'),
+    modeInput: query<HTMLInputElement>(root, '#modeInput'),
+    modeValue: query<HTMLElement>(root, '#modeValue'),
+    modeDescription: query<HTMLElement>(root, '#modeDescription'),
     equalField: query<HTMLElement>(root, '#equalField'),
     equalInput: query<HTMLInputElement>(root, '#equalInput'),
     equalValue: query<HTMLElement>(root, '#equalValue'),
-    durationSelect: query<HTMLSelectElement>(root, '#durationSelect'),
+    durationInput: query<HTMLInputElement>(root, '#durationInput'),
+    durationValue: query<HTMLElement>(root, '#durationValue'),
     preloadStatus: query<HTMLElement>(root, '#preloadStatus'),
     startButton: query<HTMLButtonElement>(root, '#startButton'),
     homeSection: query<HTMLElement>(root, '#homeSection'),

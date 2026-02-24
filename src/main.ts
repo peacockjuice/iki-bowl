@@ -34,13 +34,56 @@ let selectedDuration: DurationMin = settings.durationMin;
 let selectedTrackSrc = '';
 let rafId = 0;
 type PhaseLabel = 'Begin' | 'Inhale' | 'Hold' | 'Exhale' | 'Pause' | 'Complete';
+const MODE_VALUES: readonly ModeType[] = ['box4444', 'equal', 'relax478'];
+const DURATION_VALUES = [...DURATIONS] as DurationMin[];
 
 function setEqualFieldVisibility(): void {
   ui.equalField.classList.toggle('hidden', selectedModeType !== 'equal');
 }
 
+function setModeDescription(): void {
+  ui.modeDescription.textContent = MODE_TYPES[selectedModeType].description;
+}
+
+function setModeValue(): void {
+  ui.modeValue.textContent = MODE_TYPES[selectedModeType].label;
+}
+
 function setEqualValue(): void {
   ui.equalValue.textContent = `${selectedEqualSeconds}-${selectedEqualSeconds}`;
+}
+
+function setDurationValue(): void {
+  ui.durationValue.textContent = `${selectedDuration} min`;
+}
+
+function getDurationIndex(duration: DurationMin): number {
+  const index = DURATION_VALUES.indexOf(duration);
+  return index >= 0 ? index : 0;
+}
+
+function getDurationFromIndex(indexRaw: number): DurationMin {
+  const clamped = Math.max(0, Math.min(DURATION_VALUES.length - 1, Math.round(indexRaw)));
+  return DURATION_VALUES[clamped];
+}
+
+function getModeIndex(modeType: ModeType): number {
+  const index = MODE_VALUES.indexOf(modeType);
+  return index >= 0 ? index : 0;
+}
+
+function getModeFromIndex(indexRaw: number): ModeType {
+  const clamped = Math.max(0, Math.min(MODE_VALUES.length - 1, Math.round(indexRaw)));
+  return MODE_VALUES[clamped];
+}
+
+function updateModeRangeProgress(): void {
+  const min = Number(ui.modeInput.min);
+  const max = Number(ui.modeInput.max);
+  const value = Number(ui.modeInput.value);
+  const range = Math.max(1, max - min);
+  const percent = ((value - min) / range) * 100;
+  ui.modeInput.style.setProperty('--range-progress', `${Math.max(0, Math.min(100, percent))}%`);
 }
 
 function updateEqualRangeProgress(): void {
@@ -52,6 +95,15 @@ function updateEqualRangeProgress(): void {
   ui.equalInput.style.setProperty('--range-progress', `${Math.max(0, Math.min(100, percent))}%`);
 }
 
+function updateDurationRangeProgress(): void {
+  const min = Number(ui.durationInput.min);
+  const max = Number(ui.durationInput.max);
+  const value = Number(ui.durationInput.value);
+  const range = Math.max(1, max - min);
+  const percent = ((value - min) / range) * 100;
+  ui.durationInput.style.setProperty('--range-progress', `${Math.max(0, Math.min(100, percent))}%`);
+}
+
 function getTrackSrc(modeType: ModeType, equalSeconds: EqualSeconds, durationMin: DurationMin): string {
   const filename = resolveTrackFilename({ modeType, equalSeconds, durationMin });
   return new URL(`audio/${filename}`, new URL(import.meta.env.BASE_URL, window.location.origin)).toString();
@@ -59,6 +111,22 @@ function getTrackSrc(modeType: ModeType, equalSeconds: EqualSeconds, durationMin
 
 function updateRemaining(remainingSec: number): void {
   ui.remainingValue.textContent = formatMmSs(remainingSec);
+}
+
+function getDisplayRemainingSec(currentTimeSec: number, fallbackRemainingSec: number): number {
+  const targetSec = selectedDuration * 60;
+  if (!Number.isFinite(targetSec)) {
+    return Math.max(0, fallbackRemainingSec);
+  }
+  return Math.max(0, targetSec - currentTimeSec);
+}
+
+function getReadyDisplayRemainingSec(durationSec: number): number {
+  const targetSec = selectedDuration * 60;
+  if (!Number.isFinite(targetSec)) {
+    return durationSec;
+  }
+  return targetSec;
 }
 
 function stopCountdownLoop(): void {
@@ -72,7 +140,7 @@ function runCountdownLoop(): void {
   stopCountdownLoop();
   const loop = () => {
     const snapshot = player.getSnapshot();
-    updateRemaining(snapshot.remainingSec);
+    updateRemaining(getDisplayRemainingSec(snapshot.currentTimeSec, snapshot.remainingSec));
     if (player.getState() === 'playing') {
       rafId = requestAnimationFrame(loop);
     }
@@ -216,47 +284,45 @@ function preloadSelectedTrack(): void {
   ui.preloadStatus.textContent = 'Preparing selected session...';
   ui.startButton.disabled = true;
   setEqualFieldVisibility();
+  setModeValue();
+  setModeDescription();
   setEqualValue();
+  setDurationValue();
   setMediaSessionMetadata();
 }
 
-function fillOptions(): void {
-  Object.values(MODE_TYPES).forEach((modeType) => {
-    const option = document.createElement('option');
-    option.value = modeType.key;
-    option.textContent = modeType.label;
-    ui.modeSelect.append(option);
-  });
-
-  DURATIONS.forEach((duration) => {
-    const option = document.createElement('option');
-    option.value = String(duration);
-    option.textContent = `${duration} min`;
-    ui.durationSelect.append(option);
-  });
+function configureRangeInputs(): void {
+  ui.modeInput.min = '0';
+  ui.modeInput.max = String(MODE_VALUES.length - 1);
+  ui.modeInput.step = '1';
+  ui.durationInput.min = '0';
+  ui.durationInput.max = String(DURATION_VALUES.length - 1);
+  ui.durationInput.step = '1';
 }
 
-fillOptions();
+configureRangeInputs();
 configureMediaSessionActions();
 
-ui.modeSelect.value = selectedModeType;
+ui.modeInput.value = String(getModeIndex(selectedModeType));
 ui.equalInput.value = String(selectedEqualSeconds);
-ui.durationSelect.value = String(selectedDuration);
+ui.durationInput.value = String(getDurationIndex(selectedDuration));
 updatePauseResumeButton('other');
 updateRemaining(0);
 setEqualFieldVisibility();
+setModeValue();
+setModeDescription();
+updateModeRangeProgress();
 setEqualValue();
 updateEqualRangeProgress();
+setDurationValue();
+updateDurationRangeProgress();
 setPhaseLabel('Begin');
 setStartAgainVisible(false);
 
-ui.modeSelect.addEventListener('change', () => {
-  const candidate = ui.modeSelect.value;
-  if (!(candidate in MODE_TYPES)) {
-    return;
-  }
-
-  selectedModeType = candidate as ModeType;
+ui.modeInput.addEventListener('input', () => {
+  selectedModeType = getModeFromIndex(Number(ui.modeInput.value));
+  ui.modeInput.value = String(getModeIndex(selectedModeType));
+  updateModeRangeProgress();
   saveSettings({ modeType: selectedModeType });
   preloadSelectedTrack();
 });
@@ -273,8 +339,11 @@ ui.equalInput.addEventListener('input', () => {
   preloadSelectedTrack();
 });
 
-ui.durationSelect.addEventListener('change', () => {
-  selectedDuration = Number(ui.durationSelect.value) as DurationMin;
+ui.durationInput.addEventListener('input', () => {
+  selectedDuration = getDurationFromIndex(Number(ui.durationInput.value));
+  ui.durationInput.value = String(getDurationIndex(selectedDuration));
+  setDurationValue();
+  updateDurationRangeProgress();
   saveSettings({ durationMin: selectedDuration });
   preloadSelectedTrack();
 });
@@ -343,7 +412,7 @@ player.addEventListener('trackstatus', (event) => {
     ui.preloadStatus.textContent = 'Session ready.';
     ui.startButton.disabled = false;
     if (typeof detail.durationSec === 'number') {
-      updateRemaining(detail.durationSec);
+      updateRemaining(getReadyDisplayRemainingSec(detail.durationSec));
     }
     return;
   }
@@ -359,7 +428,7 @@ player.addEventListener('trackstatus', (event) => {
 
 player.addEventListener('timeupdate', (event) => {
   const detail = (event as CustomEvent<TimeUpdateDetail>).detail;
-  updateRemaining(detail.remainingSec);
+  updateRemaining(getDisplayRemainingSec(detail.currentTimeSec, detail.remainingSec));
   if (player.getState() === 'playing') {
     setPhaseLabel(getCurrentPhaseLabel(detail.currentTimeSec));
   }
@@ -398,6 +467,7 @@ player.addEventListener('statechange', (event) => {
   if (detail.state === 'completed') {
     updatePauseResumeButton('other');
     stopCountdownLoop();
+    updateRemaining(0);
     setPhaseLabel('Complete');
     ui.interruptionMessage.textContent = 'Complete.';
     setStartAgainVisible(true);
@@ -426,7 +496,7 @@ player.addEventListener('statechange', (event) => {
 
 document.addEventListener('visibilitychange', () => {
   const snapshot = player.getSnapshot();
-  updateRemaining(snapshot.remainingSec);
+  updateRemaining(getDisplayRemainingSec(snapshot.currentTimeSec, snapshot.remainingSec));
   if (player.getState() === 'playing') {
     setPhaseLabel(getCurrentPhaseLabel(snapshot.currentTimeSec));
   }

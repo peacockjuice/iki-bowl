@@ -3,8 +3,8 @@ import { join } from 'node:path';
 
 import { getExpectedTrackFilenames } from './audio-spec.mjs';
 
-const warnThresholdMb = 220;
-const failThresholdMb = 260;
+const warnThresholdMb = 520;
+const failThresholdMb = 600;
 
 const toMb = (bytes) => bytes / (1024 * 1024);
 
