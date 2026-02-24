@@ -38,27 +38,27 @@ export function renderApp(root: HTMLElement): UiRefs {
 
         <div class="field">
           <label class="label" for="modeInput">
-            Breathing mode : <span id="modeValue">Buteyko (N-N)</span>
+            <strong>Breathing mode</strong> : <span id="modeValue">Buteyko (N-N)</span>
           </label>
           <p id="modeDescription" class="mode-description"></p>
           <input id="modeInput" type="range" min="0" max="2" step="1" value="1" />
           <div class="range-labels" aria-hidden="true">
-            <span class="range-label-start">Box (4-4-4-4)</span>
-            <span class="range-label-center">Buteyko (N-N)</span>
-            <span class="range-label-end">Dr. Weil (4-7-8)</span>
+            <span class="range-label-item">Box<br />(4-4-4-4)</span>
+            <span class="range-label-item">Buteyko<br />(N-N)</span>
+            <span class="range-label-item">Dr. Weil<br />(4-7-8)</span>
           </div>
         </div>
 
         <div id="equalField" class="field">
           <label class="label" for="equalInput">
-            Buteyko rhytm : <span id="equalValue">4-4</span>
+            <strong>Buteyko rhytm</strong> : <span id="equalValue">4-4</span>
           </label>
           <input id="equalInput" type="range" min="4" max="7" step="1" value="4" />
         </div>
 
         <div class="field">
           <label class="label" for="durationInput">
-            Session duration : <span id="durationValue">10 min</span>
+            <strong>Session duration</strong> : <span id="durationValue">10 min</span>
           </label>
           <input id="durationInput" type="range" min="0" max="2" step="1" value="1" />
         </div>
