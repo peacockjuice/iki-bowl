@@ -28,7 +28,7 @@ export type DurationMin = (typeof DURATIONS)[number];
 
 export const DEFAULT_SETTINGS = {
   modeType: 'equal' as ModeType,
-  equalSeconds: 4 as EqualSeconds,
+  equalSeconds: 6 as EqualSeconds,
   durationMin: 10 as DurationMin,
 };
 

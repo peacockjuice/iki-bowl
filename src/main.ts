@@ -33,28 +33,29 @@ let selectedEqualSeconds: EqualSeconds = settings.equalSeconds;
 let selectedDuration: DurationMin = settings.durationMin;
 let selectedTrackSrc = '';
 let rafId = 0;
-type PhaseLabel = 'Begin' | 'Inhale' | 'Hold' | 'Exhale' | 'Pause' | 'Complete';
+let lastPhaseLabel: PhaseLabel = 'Begin';
+type PhaseLabel = 'Begin' | 'Inhale' | 'Hold' | 'HoldOut' | 'Exhale' | 'Pause' | 'Complete';
 const MODE_VALUES: readonly ModeType[] = ['box4444', 'equal', 'relax478'];
 const DURATION_VALUES = [...DURATIONS] as DurationMin[];
 
+function updateThumb(container: HTMLElement, noTransition = false): void {
+  const activeBtn = container.querySelector<HTMLElement>('.segment.active');
+  const thumb = container.querySelector<HTMLElement>('.segmented-thumb');
+  if (!activeBtn || !thumb) return;
+  if (noTransition) thumb.style.transition = 'none';
+  thumb.style.width = `${activeBtn.offsetWidth}px`;
+  thumb.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+  if (noTransition) requestAnimationFrame(() => { thumb.style.transition = ''; });
+}
+
 function setEqualFieldVisibility(): void {
-  ui.equalField.classList.toggle('hidden', selectedModeType !== 'equal');
+  const show = selectedModeType === 'equal';
+  ui.equalField.classList.toggle('hidden', !show);
+  if (show) updateThumb(ui.equalSegmented, true);
 }
 
 function setModeDescription(): void {
   ui.modeDescription.textContent = MODE_TYPES[selectedModeType].description;
-}
-
-function setModeValue(): void {
-  ui.modeValue.textContent = MODE_TYPES[selectedModeType].label;
-}
-
-function setEqualValue(): void {
-  ui.equalValue.textContent = `${selectedEqualSeconds}-${selectedEqualSeconds}`;
-}
-
-function setDurationValue(): void {
-  ui.durationValue.textContent = `${selectedDuration} min`;
 }
 
 function getDurationIndex(duration: DurationMin): number {
@@ -77,31 +78,11 @@ function getModeFromIndex(indexRaw: number): ModeType {
   return MODE_VALUES[clamped];
 }
 
-function updateModeRangeProgress(): void {
-  const min = Number(ui.modeInput.min);
-  const max = Number(ui.modeInput.max);
-  const value = Number(ui.modeInput.value);
-  const range = Math.max(1, max - min);
-  const percent = ((value - min) / range) * 100;
-  ui.modeInput.style.setProperty('--range-progress', `${Math.max(0, Math.min(100, percent))}%`);
-}
-
-function updateEqualRangeProgress(): void {
-  const min = Number(ui.equalInput.min);
-  const max = Number(ui.equalInput.max);
-  const value = Number(ui.equalInput.value);
-  const range = Math.max(1, max - min);
-  const percent = ((value - min) / range) * 100;
-  ui.equalInput.style.setProperty('--range-progress', `${Math.max(0, Math.min(100, percent))}%`);
-}
-
-function updateDurationRangeProgress(): void {
-  const min = Number(ui.durationInput.min);
-  const max = Number(ui.durationInput.max);
-  const value = Number(ui.durationInput.value);
-  const range = Math.max(1, max - min);
-  const percent = ((value - min) / range) * 100;
-  ui.durationInput.style.setProperty('--range-progress', `${Math.max(0, Math.min(100, percent))}%`);
+function setSegmentedActive(container: HTMLElement, value: string): void {
+  container.querySelectorAll('.segment').forEach((btn) => {
+    btn.classList.toggle('active', (btn as HTMLElement).dataset.value === value);
+  });
+  updateThumb(container);
 }
 
 function getTrackSrc(modeType: ModeType, equalSeconds: EqualSeconds, durationMin: DurationMin): string {
@@ -158,13 +139,57 @@ function clearMessages(): void {
   ui.interruptionMessage.textContent = '';
 }
 
-function setPhaseLabel(label: PhaseLabel): void {
-  ui.phaseLabel.textContent = label;
+function getPhaseRemainingSeconds(label: PhaseLabel, currentTimeSec: number): number {
+  if (selectedModeType === 'equal') {
+    const N = selectedEqualSeconds;
+    const offset = currentTimeSec % (N * 2);
+    return label === 'Inhale' ? N - offset : N * 2 - offset;
+  }
+  if (selectedModeType === 'box4444') {
+    const offset = currentTimeSec % 16;
+    if (label === 'Inhale') return 4 - offset;
+    if (label === 'Hold') return 8 - offset;
+    if (label === 'Exhale') return 12 - offset;
+    return 16 - offset; // HoldOut
+  }
+  // relax478
+  const offset = currentTimeSec % 19;
+  if (label === 'Inhale') return 4 - offset;
+  if (label === 'Hold') return 11 - offset;
+  return 19 - offset; // Exhale
+}
+
+function setPhaseLabel(label: PhaseLabel, currentTimeSec?: number): void {
+  lastPhaseLabel = label;
+
+  const textByLabel: Record<PhaseLabel, string> = {
+    Begin: 'Begin',
+    Inhale: 'Inhale',
+    Hold: 'Hold',
+    HoldOut: 'Hold',
+    Exhale: 'Exhale',
+    Pause: 'Pause',
+    Complete: 'Complete',
+  };
+  ui.phaseLabel.textContent = textByLabel[label];
+
+  if ((label === 'Inhale' || label === 'Exhale') && currentTimeSec !== undefined) {
+    const ms = Math.round(Math.max(getPhaseRemainingSeconds(label, currentTimeSec), 0.1) * 1000);
+    ui.breathCircle.style.setProperty('--motion-breath', `${ms}ms`);
+    ui.breathCircle.style.setProperty('--breath-easing', 'ease-in-out');
+  } else if (label === 'Hold' || label === 'HoldOut') {
+    ui.breathCircle.style.setProperty('--motion-breath', '300ms');
+    ui.breathCircle.style.removeProperty('--breath-easing');
+  } else {
+    ui.breathCircle.style.removeProperty('--motion-breath');
+    ui.breathCircle.style.removeProperty('--breath-easing');
+  }
 
   const classByLabel: Record<PhaseLabel, string> = {
     Begin: 'phase-begin',
     Inhale: 'phase-inhale',
     Hold: 'phase-hold',
+    HoldOut: 'phase-hold-out',
     Exhale: 'phase-exhale',
     Pause: 'phase-pause',
     Complete: 'phase-complete',
@@ -179,7 +204,7 @@ function updatePauseResumeButton(state: 'playing' | 'paused' | 'other'): void {
     return;
   }
   if (state === 'paused') {
-    ui.pauseResumeButton.textContent = 'Begin';
+    ui.pauseResumeButton.textContent = 'Resume';
     ui.pauseResumeButton.disabled = false;
     return;
   }
@@ -213,7 +238,7 @@ function getCurrentPhaseLabel(currentTimeSec: number): PhaseLabel {
     if (offsetSec < 12) {
       return 'Exhale';
     }
-    return 'Hold';
+    return 'HoldOut';
   }
 
   const offsetSec = currentTimeSec % 19;
@@ -284,66 +309,50 @@ function preloadSelectedTrack(): void {
   ui.preloadStatus.textContent = 'Preparing selected session...';
   ui.startButton.disabled = true;
   setEqualFieldVisibility();
-  setModeValue();
   setModeDescription();
-  setEqualValue();
-  setDurationValue();
   setMediaSessionMetadata();
 }
 
-function configureRangeInputs(): void {
-  ui.modeInput.min = '0';
-  ui.modeInput.max = String(MODE_VALUES.length - 1);
-  ui.modeInput.step = '1';
-  ui.durationInput.min = '0';
-  ui.durationInput.max = String(DURATION_VALUES.length - 1);
-  ui.durationInput.step = '1';
-}
-
-configureRangeInputs();
 configureMediaSessionActions();
 
-ui.modeInput.value = String(getModeIndex(selectedModeType));
-ui.equalInput.value = String(selectedEqualSeconds);
-ui.durationInput.value = String(getDurationIndex(selectedDuration));
+setSegmentedActive(ui.modeSegmented, String(getModeIndex(selectedModeType)));
+setSegmentedActive(ui.equalSegmented, String(selectedEqualSeconds));
+setSegmentedActive(ui.durationSegmented, String(getDurationIndex(selectedDuration)));
+updateThumb(ui.modeSegmented, true);
+updateThumb(ui.equalSegmented, true);
+updateThumb(ui.durationSegmented, true);
 updatePauseResumeButton('other');
 updateRemaining(0);
 setEqualFieldVisibility();
-setModeValue();
 setModeDescription();
-updateModeRangeProgress();
-setEqualValue();
-updateEqualRangeProgress();
-setDurationValue();
-updateDurationRangeProgress();
 setPhaseLabel('Begin');
 setStartAgainVisible(false);
 
-ui.modeInput.addEventListener('input', () => {
-  selectedModeType = getModeFromIndex(Number(ui.modeInput.value));
-  ui.modeInput.value = String(getModeIndex(selectedModeType));
-  updateModeRangeProgress();
+ui.modeSegmented.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.segment') as HTMLElement | null;
+  if (!btn?.dataset.value) return;
+  setSegmentedActive(ui.modeSegmented, btn.dataset.value);
+  selectedModeType = getModeFromIndex(Number(btn.dataset.value));
   saveSettings({ modeType: selectedModeType });
   preloadSelectedTrack();
 });
 
-ui.equalInput.addEventListener('input', () => {
-  const value = Number(ui.equalInput.value);
-  if (!(EQUAL_SECONDS as readonly number[]).includes(value)) {
-    return;
-  }
-
+ui.equalSegmented.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.segment') as HTMLElement | null;
+  if (!btn?.dataset.value) return;
+  const value = Number(btn.dataset.value);
+  if (!(EQUAL_SECONDS as readonly number[]).includes(value)) return;
   selectedEqualSeconds = value as EqualSeconds;
+  setSegmentedActive(ui.equalSegmented, btn.dataset.value);
   saveSettings({ equalSeconds: selectedEqualSeconds });
-  updateEqualRangeProgress();
   preloadSelectedTrack();
 });
 
-ui.durationInput.addEventListener('input', () => {
-  selectedDuration = getDurationFromIndex(Number(ui.durationInput.value));
-  ui.durationInput.value = String(getDurationIndex(selectedDuration));
-  setDurationValue();
-  updateDurationRangeProgress();
+ui.durationSegmented.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.segment') as HTMLElement | null;
+  if (!btn?.dataset.value) return;
+  setSegmentedActive(ui.durationSegmented, btn.dataset.value);
+  selectedDuration = getDurationFromIndex(Number(btn.dataset.value));
   saveSettings({ durationMin: selectedDuration });
   preloadSelectedTrack();
 });
@@ -430,7 +439,10 @@ player.addEventListener('timeupdate', (event) => {
   const detail = (event as CustomEvent<TimeUpdateDetail>).detail;
   updateRemaining(getDisplayRemainingSec(detail.currentTimeSec, detail.remainingSec));
   if (player.getState() === 'playing') {
-    setPhaseLabel(getCurrentPhaseLabel(detail.currentTimeSec));
+    const newLabel = getCurrentPhaseLabel(detail.currentTimeSec);
+    if (newLabel !== lastPhaseLabel) {
+      setPhaseLabel(newLabel, detail.currentTimeSec);
+    }
   }
 });
 
@@ -449,7 +461,8 @@ player.addEventListener('statechange', (event) => {
     clearMessages();
     updatePauseResumeButton('playing');
     setStartAgainVisible(false);
-    setPhaseLabel(getCurrentPhaseLabel(player.getSnapshot().currentTimeSec));
+    const snapshot = player.getSnapshot();
+    setPhaseLabel(getCurrentPhaseLabel(snapshot.currentTimeSec), snapshot.currentTimeSec);
     runCountdownLoop();
     return;
   }
@@ -460,7 +473,7 @@ player.addEventListener('statechange', (event) => {
     setPhaseLabel('Pause');
     ui.interruptionMessage.textContent = detail.interrupted
       ? 'Playback was interrupted by the system or another media source.'
-      : 'Paused.';
+      : '';
     return;
   }
 
@@ -498,7 +511,7 @@ document.addEventListener('visibilitychange', () => {
   const snapshot = player.getSnapshot();
   updateRemaining(getDisplayRemainingSec(snapshot.currentTimeSec, snapshot.remainingSec));
   if (player.getState() === 'playing') {
-    setPhaseLabel(getCurrentPhaseLabel(snapshot.currentTimeSec));
+    setPhaseLabel(getCurrentPhaseLabel(snapshot.currentTimeSec), snapshot.currentTimeSec);
   }
 });
 

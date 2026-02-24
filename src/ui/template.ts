@@ -1,12 +1,9 @@
 export interface UiRefs {
-  modeInput: HTMLInputElement;
-  modeValue: HTMLElement;
+  modeSegmented: HTMLElement;
   modeDescription: HTMLElement;
   equalField: HTMLElement;
-  equalInput: HTMLInputElement;
-  equalValue: HTMLElement;
-  durationInput: HTMLInputElement;
-  durationValue: HTMLElement;
+  equalSegmented: HTMLElement;
+  durationSegmented: HTMLElement;
   preloadStatus: HTMLElement;
   startButton: HTMLButtonElement;
   homeSection: HTMLElement;
@@ -32,35 +29,41 @@ function query<T extends Element>(container: ParentNode, selector: string): T {
 export function renderApp(root: HTMLElement): UiRefs {
   root.innerHTML = `
     <main class="app">
-      <section id="homeSection" class="card screen-card">
+      <div class="app-header">
         <h1>Iki Gong</h1>
         <p class="subtitle">Quiet breathing sessions for iPhone lock-screen use.</p>
-
+      </div>
+      <section id="homeSection" class="card screen-card">
         <div class="field">
-          <label class="label" for="modeInput">
-            <strong>Breathing mode</strong> : <span id="modeValue">Buteyko (N-N)</span>
-          </label>
+          <p class="label">Breathing mode</p>
           <p id="modeDescription" class="mode-description"></p>
-          <input id="modeInput" type="range" min="0" max="2" step="1" value="1" />
-          <div class="range-labels" aria-hidden="true">
-            <span class="range-label-item">Box<br />(4-4-4-4)</span>
-            <span class="range-label-item">Buteyko<br />(N-N)</span>
-            <span class="range-label-item">Dr. Weil<br />(4-7-8)</span>
+          <div class="segmented" id="modeSegmented" role="group" aria-label="Breathing mode">
+            <span class="segmented-thumb" aria-hidden="true"></span>
+            <button class="segment" data-value="0">Box<br />(4-4-4-4)</button>
+            <button class="segment" data-value="1">Buteyko<br />(N-N)</button>
+            <button class="segment" data-value="2">Dr. Weil<br />(4-7-8)</button>
           </div>
         </div>
 
         <div id="equalField" class="field">
-          <label class="label" for="equalInput">
-            <strong>Buteyko rhytm</strong> : <span id="equalValue">4-4</span>
-          </label>
-          <input id="equalInput" type="range" min="4" max="7" step="1" value="4" />
+          <p class="label">Buteyko rhythm</p>
+          <div class="segmented" id="equalSegmented" role="group" aria-label="Buteyko rhythm">
+            <span class="segmented-thumb" aria-hidden="true"></span>
+            <button class="segment" data-value="4">4–4</button>
+            <button class="segment" data-value="5">5–5</button>
+            <button class="segment" data-value="6">6–6</button>
+            <button class="segment" data-value="7">7–7</button>
+          </div>
         </div>
 
         <div class="field">
-          <label class="label" for="durationInput">
-            <strong>Session duration</strong> : <span id="durationValue">10 min</span>
-          </label>
-          <input id="durationInput" type="range" min="0" max="2" step="1" value="1" />
+          <p class="label">Session duration</p>
+          <div class="segmented" id="durationSegmented" role="group" aria-label="Session duration">
+            <span class="segmented-thumb" aria-hidden="true"></span>
+            <button class="segment" data-value="0">5 min</button>
+            <button class="segment" data-value="1">10 min</button>
+            <button class="segment" data-value="2">20 min</button>
+          </div>
         </div>
 
         <button id="startButton" disabled>Begin</button>
@@ -86,14 +89,11 @@ export function renderApp(root: HTMLElement): UiRefs {
   `;
 
   return {
-    modeInput: query<HTMLInputElement>(root, '#modeInput'),
-    modeValue: query<HTMLElement>(root, '#modeValue'),
+    modeSegmented: query<HTMLElement>(root, '#modeSegmented'),
     modeDescription: query<HTMLElement>(root, '#modeDescription'),
     equalField: query<HTMLElement>(root, '#equalField'),
-    equalInput: query<HTMLInputElement>(root, '#equalInput'),
-    equalValue: query<HTMLElement>(root, '#equalValue'),
-    durationInput: query<HTMLInputElement>(root, '#durationInput'),
-    durationValue: query<HTMLElement>(root, '#durationValue'),
+    equalSegmented: query<HTMLElement>(root, '#equalSegmented'),
+    durationSegmented: query<HTMLElement>(root, '#durationSegmented'),
     preloadStatus: query<HTMLElement>(root, '#preloadStatus'),
     startButton: query<HTMLButtonElement>(root, '#startButton'),
     homeSection: query<HTMLElement>(root, '#homeSection'),
