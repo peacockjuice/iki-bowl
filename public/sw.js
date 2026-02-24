@@ -1,6 +1,6 @@
-const CACHE_VERSION = 'v4';
-const APP_SHELL_CACHE = `breeth-shell-${CACHE_VERSION}`;
-const AUDIO_CACHE = `breeth-audio-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v5';
+const APP_SHELL_CACHE = `iki-bowl-shell-${CACHE_VERSION}`;
+const AUDIO_CACHE = `iki-bowl-audio-${CACHE_VERSION}`;
 
 const APP_SHELL_ASSETS = ['', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
@@ -19,7 +19,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key.startsWith('breeth-') && key !== APP_SHELL_CACHE && key !== AUDIO_CACHE)
+          .filter((key) => key.startsWith('iki-bowl-') && key !== APP_SHELL_CACHE && key !== AUDIO_CACHE)
           .map((key) => caches.delete(key)),
       ),
     ),

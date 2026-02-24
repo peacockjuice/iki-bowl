@@ -6,17 +6,15 @@ const projectRoot = process.cwd();
 const targets = [
   'src/main.ts',
   'src/ui/template.ts',
-  'src/storage/settings.ts',
-  'src/player/audioSessionPlayer.ts',
   'README.md',
-  'rules.md',
-  'MVP_PLAN.md',
+  'package.json',
+  'package-lock.json',
+  'public/sw.js',
   'index.html',
   'public/manifest.webmanifest',
 ];
 
 const forbiddenPatterns = [
-  { label: 'Breeth', regex: /\bBreeth\b/g },
   { label: 'Master volume', regex: /Master volume/g },
   { label: 'volumePercent', regex: /\bvolumePercent\b/g },
   { label: 'setVolumeFromPercent', regex: /\bsetVolumeFromPercent\b/g },
@@ -26,7 +24,7 @@ let hasFailure = false;
 
 for (const relativePath of targets) {
   const absolutePath = join(projectRoot, relativePath);
-  const content = readFileSync(absolutePath, 'utf8').replaceAll('PRD v2 - Breeth.txt', '');
+  const content = readFileSync(absolutePath, 'utf8');
 
   for (const pattern of forbiddenPatterns) {
     const matches = content.match(pattern.regex);

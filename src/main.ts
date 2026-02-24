@@ -270,8 +270,8 @@ function setMediaSessionMetadata(): void {
   }
 
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: `Iki Gong ${getModeLabel(selectedModeType, selectedEqualSeconds)}`,
-    artist: 'Iki Gong',
+    title: `iki bowl ${getModeLabel(selectedModeType, selectedEqualSeconds)}`,
+    artist: 'iki bowl',
     album: `${selectedDuration} min session`,
   });
 }

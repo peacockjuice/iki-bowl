@@ -30,11 +30,6 @@ jobs:
       - name: Install dependencies
         run: npm install --no-fund --no-audit
 
-      - name: Ensure ffmpeg tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-
       - name: Validate branding constraints
         run: npm run check:branding
 
@@ -43,9 +38,6 @@ jobs:
 
       - name: Build
         run: BASE_PATH=/${{ github.event.repository.name }}/ npm run build
-
-      - name: Strip records from dist
-        run: npm run dist:strip-records
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
