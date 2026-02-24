@@ -318,9 +318,14 @@ configureMediaSessionActions();
 setSegmentedActive(ui.modeSegmented, String(getModeIndex(selectedModeType)));
 setSegmentedActive(ui.equalSegmented, String(selectedEqualSeconds));
 setSegmentedActive(ui.durationSegmented, String(getDurationIndex(selectedDuration)));
-updateThumb(ui.modeSegmented, true);
-updateThumb(ui.equalSegmented, true);
-updateThumb(ui.durationSegmented, true);
+document.fonts.ready.then(() => {
+  requestAnimationFrame(() => {
+    [ui.modeSegmented, ui.equalSegmented, ui.durationSegmented].forEach((seg) => {
+      updateThumb(seg, true);
+      seg.querySelector<HTMLElement>('.segmented-thumb')!.style.opacity = '1';
+    });
+  });
+});
 updatePauseResumeButton('other');
 updateRemaining(0);
 setEqualFieldVisibility();
