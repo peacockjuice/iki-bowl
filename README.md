@@ -1,4 +1,4 @@
-# iki bowl
+# Iki Bowl
 
 iOS-first breathing PWA (no backend). Sessions are pre-recorded tracks played via HTML `<audio>`.
 

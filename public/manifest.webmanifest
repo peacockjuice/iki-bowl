@@ -1,6 +1,6 @@
 {
-  "name": "iki bowl",
-  "short_name": "iki bowl",
+  "name": "Iki Bowl",
+  "short_name": "Iki Bowl",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

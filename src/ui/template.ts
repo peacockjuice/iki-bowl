@@ -30,7 +30,7 @@ export function renderApp(root: HTMLElement): UiRefs {
   root.innerHTML = `
     <main class="app">
       <div class="app-header">
-        <h1>iki bowl</h1>
+        <h1>Iki Bowl</h1>
         <p class="subtitle">Quiet breathing sessions for iPhone lock-screen use.</p>
       </div>
       <section id="homeSection" class="card screen-card">

@@ -270,8 +270,8 @@ function setMediaSessionMetadata(): void {
   }
 
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: `iki bowl ${getModeLabel(selectedModeType, selectedEqualSeconds)}`,
-    artist: 'iki bowl',
+    title: `Iki Bowl ${getModeLabel(selectedModeType, selectedEqualSeconds)}`,
+    artist: 'Iki Bowl',
     album: `${selectedDuration} min session`,
   });
 }
