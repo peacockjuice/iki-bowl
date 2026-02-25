@@ -325,6 +325,7 @@ button[disabled] {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .session-center .breath-circle {
@@ -355,13 +356,16 @@ button[disabled] {
   font-weight: 500;
   text-align: center;
   color: var(--text);
-  transform: scale(calc(1 / var(--circle-scale, 1)));
-  transition: transform var(--motion-breath) var(--breath-easing, cubic-bezier(0.22, 0.61, 0.36, 1));
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .phase-label.countdown-active {
   font-family: inherit;
   font-size: 30px;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
 
@@ -423,6 +427,11 @@ button[disabled] {
 
 .session-screen .row {
   margin-top: var(--space-2);
+}
+
+#interruptionMessage:empty,
+#errorMessage:empty {
+  display: none;
 }
 
 .hidden {

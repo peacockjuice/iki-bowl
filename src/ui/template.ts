@@ -74,17 +74,16 @@ export function renderApp(root: HTMLElement): UiRefs {
 
       <section id="sessionSection" class="card screen-card session-screen hidden">
         <div class="session-center">
-          <div id="breathCircle" class="breath-circle phase-begin">
-            <p id="phaseLabel" class="phase-label">Begin</p>
-          </div>
+          <div id="breathCircle" class="breath-circle phase-begin"></div>
+          <p id="phaseLabel" class="phase-label">Begin</p>
         </div>
         <p id="remainingValue" class="remaining-value">00:00</p>
         <p id="interruptionMessage" class="muted"></p>
         <p id="errorMessage" class="error"></p>
 
         <div class="row">
-          <button id="pauseResumeButton" class="ghost">Pause</button>
-          <button id="stopButton" class="secondary">End</button>
+          <button id="pauseResumeButton" class="secondary">Pause</button>
+          <button id="stopButton" class="ghost">End</button>
         </div>
 
         <button id="startAgainButton" class="hidden" style="margin-top: 12px;">Begin again</button>
