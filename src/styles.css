@@ -138,6 +138,7 @@ h2 {
 .segmented {
   display: flex;
   position: relative;
+  overflow: hidden;
   background: color-mix(in srgb, var(--text) 7%, transparent);
   border-radius: var(--radius-control);
   padding: 3px;

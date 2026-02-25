@@ -344,8 +344,6 @@ function preloadSelectedTrack(): void {
   clearMessages();
   selectedTrackSrc = getTrackSrc(selectedModeType, selectedEqualSeconds, selectedDuration);
   player.preload(selectedTrackSrc);
-  ui.preloadStatus.textContent = 'Preparing selected session...';
-  ui.startButton.disabled = true;
   setEqualFieldVisibility();
   setModeDescription();
   setMediaSessionMetadata();
@@ -476,12 +474,6 @@ ui.startAgainButton.addEventListener('click', () => {
 player.addEventListener('trackstatus', (event) => {
   const detail = (event as CustomEvent<TrackStatusDetail>).detail;
   if (detail.src !== selectedTrackSrc) {
-    return;
-  }
-
-  if (detail.loading) {
-    ui.preloadStatus.textContent = 'Preparing selected session...';
-    ui.startButton.disabled = true;
     return;
   }
 

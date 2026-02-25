@@ -68,7 +68,7 @@ export function renderApp(root: HTMLElement): UiRefs {
 
         <button id="startButton" disabled>
           <span class="btn-main">Begin</span>
-          <span id="preloadStatus" class="btn-status">Preparing selected session...</span>
+          <span id="preloadStatus" class="btn-status"></span>
         </button>
       </section>
 
@@ -83,8 +83,8 @@ export function renderApp(root: HTMLElement): UiRefs {
         <p id="errorMessage" class="error"></p>
 
         <div class="row">
-          <button id="pauseResumeButton" class="secondary">Pause</button>
-          <button id="stopButton" class="ghost">End</button>
+          <button id="pauseResumeButton" class="ghost">Pause</button>
+          <button id="stopButton" class="secondary">End</button>
         </div>
 
         <button id="startAgainButton" class="hidden" style="margin-top: 12px;">Begin again</button>
