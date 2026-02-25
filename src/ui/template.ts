@@ -45,6 +45,16 @@ export function renderApp(root: HTMLElement): UiRefs {
           </div>
         </div>
 
+        <div class="field">
+          <p class="label">Session duration</p>
+          <div class="segmented" id="durationSegmented" role="group" aria-label="Session duration">
+            <span class="segmented-thumb" aria-hidden="true"></span>
+            <button class="segment" data-value="0">5 min</button>
+            <button class="segment" data-value="1">10 min</button>
+            <button class="segment" data-value="2">20 min</button>
+          </div>
+        </div>
+
         <div id="equalField" class="field">
           <p class="label">Buteyko rhythm</p>
           <div class="segmented" id="equalSegmented" role="group" aria-label="Buteyko rhythm">
@@ -56,23 +66,17 @@ export function renderApp(root: HTMLElement): UiRefs {
           </div>
         </div>
 
-        <div class="field">
-          <p class="label">Session duration</p>
-          <div class="segmented" id="durationSegmented" role="group" aria-label="Session duration">
-            <span class="segmented-thumb" aria-hidden="true"></span>
-            <button class="segment" data-value="0">5 min</button>
-            <button class="segment" data-value="1">10 min</button>
-            <button class="segment" data-value="2">20 min</button>
-          </div>
-        </div>
-
-        <button id="startButton" disabled>Begin</button>
-        <p id="preloadStatus" class="state">Preparing selected session...</p>
+        <button id="startButton" disabled>
+          <span class="btn-main">Begin</span>
+          <span id="preloadStatus" class="btn-status">Preparing selected session...</span>
+        </button>
       </section>
 
       <section id="sessionSection" class="card screen-card session-screen hidden">
-        <div id="breathCircle" class="breath-circle phase-begin">
-          <p id="phaseLabel" class="phase-label">Begin</p>
+        <div class="session-center">
+          <div id="breathCircle" class="breath-circle phase-begin">
+            <p id="phaseLabel" class="phase-label">Begin</p>
+          </div>
         </div>
         <p id="remainingValue" class="remaining-value">00:00</p>
         <p id="interruptionMessage" class="muted"></p>

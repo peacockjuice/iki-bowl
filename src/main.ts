@@ -34,6 +34,8 @@ let selectedDuration: DurationMin = settings.durationMin;
 let selectedTrackSrc = '';
 let rafId = 0;
 let lastPhaseLabel: PhaseLabel = 'Begin';
+let countdownTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let countdownResolve: ((value: boolean) => void) | null = null;
 type PhaseLabel = 'Begin' | 'Inhale' | 'Hold' | 'HoldOut' | 'Exhale' | 'Pause' | 'Complete';
 const MODE_VALUES: readonly ModeType[] = ['box4444', 'equal', 'relax478'];
 const DURATION_VALUES = [...DURATIONS] as DurationMin[];
@@ -117,6 +119,17 @@ function stopCountdownLoop(): void {
   }
 }
 
+function abortCountdown(): void {
+  if (countdownTimeoutId !== null) {
+    clearTimeout(countdownTimeoutId);
+    countdownTimeoutId = null;
+  }
+  if (countdownResolve !== null) {
+    countdownResolve(false);
+    countdownResolve = null;
+  }
+}
+
 function runCountdownLoop(): void {
   stopCountdownLoop();
   const loop = () => {
@@ -194,7 +207,31 @@ function setPhaseLabel(label: PhaseLabel, currentTimeSec?: number): void {
     Pause: 'phase-pause',
     Complete: 'phase-complete',
   };
-  ui.breathCircle.className = `breath-circle ${classByLabel[label]}`;
+
+  if (label === 'Pause') {
+    // Freeze ring at its exact current rendered position (even if mid-animation)
+    const computed = window.getComputedStyle(ui.breathCircle).transform;
+    ui.breathCircle.style.transform = computed === 'none' ? '' : computed;
+    ui.breathCircle.style.transition = 'none';
+    ui.breathCircle.className = 'breath-circle phase-pause';
+    return;
+  }
+
+  const newClass = classByLabel[label];
+  const resumingFromPause = ui.breathCircle.style.transition === 'none';
+
+  if (resumingFromPause) {
+    // Set target class while inline frozen transform still takes precedence (no visual change yet)
+    ui.breathCircle.className = `breath-circle ${newClass}`;
+    // Re-enable CSS transitions (--motion-breath already set above)
+    ui.breathCircle.style.transition = '';
+    // Force reflow so browser commits the frozen position as the animation starting value
+    void ui.breathCircle.offsetWidth;
+    // Remove inline transform — browser transitions from frozen position to CSS class target
+    ui.breathCircle.style.transform = '';
+  } else {
+    ui.breathCircle.className = `breath-circle ${newClass}`;
+  }
 }
 
 function updatePauseResumeButton(state: 'playing' | 'paused' | 'other'): void {
@@ -296,6 +333,7 @@ function configureMediaSessionActions(): void {
     player.pause();
   });
   setAction('stop', () => {
+    abortCountdown();
     player.stop();
     setScreenMode(false);
     stopCountdownLoop();
@@ -364,6 +402,7 @@ ui.durationSegmented.addEventListener('click', (e) => {
 
 async function startSelectedSession(): Promise<void> {
   clearMessages();
+  abortCountdown();
 
   if (!navigator.onLine) {
     const cached = await isTrackCached(selectedTrackSrc);
@@ -374,6 +413,29 @@ async function startSelectedSession(): Promise<void> {
   }
 
   setScreenMode(true);
+  setPhaseLabel('Begin');
+  updatePauseResumeButton('other');
+
+  const started = await new Promise<boolean>((resolve) => {
+    countdownResolve = resolve;
+    let count = 3;
+    ui.phaseLabel.textContent = '3';
+    function tick(): void {
+      count--;
+      if (count === 0) {
+        countdownTimeoutId = null;
+        countdownResolve = null;
+        resolve(true);
+        return;
+      }
+      ui.phaseLabel.textContent = String(count);
+      countdownTimeoutId = setTimeout(tick, 1000);
+    }
+    countdownTimeoutId = setTimeout(tick, 1000);
+  });
+
+  if (!started) return;
+
   saveSettings({ lastUsedAt: new Date().toISOString() });
   await player.start(selectedTrackSrc);
 }
@@ -393,6 +455,7 @@ ui.pauseResumeButton.addEventListener('click', () => {
 });
 
 ui.stopButton.addEventListener('click', () => {
+  abortCountdown();
   player.stop();
   stopCountdownLoop();
   setScreenMode(false);
@@ -423,7 +486,7 @@ player.addEventListener('trackstatus', (event) => {
   }
 
   if (detail.ready) {
-    ui.preloadStatus.textContent = 'Session ready.';
+    ui.preloadStatus.textContent = '';
     ui.startButton.disabled = false;
     if (typeof detail.durationSec === 'number') {
       updateRemaining(getReadyDisplayRemainingSec(detail.durationSec));

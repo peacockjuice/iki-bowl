@@ -50,7 +50,7 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-size: 16px;
@@ -60,7 +60,10 @@ body {
 .app {
   max-width: 680px;
   margin: 0 auto;
-  padding: var(--space-5) var(--space-4) var(--space-6);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-header {
@@ -74,6 +77,13 @@ body {
   padding: var(--space-4);
   margin-bottom: var(--space-4);
   animation: screen-fade var(--motion-screen) ease-out;
+}
+
+.card.screen-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
 }
 
 h1,
@@ -231,6 +241,25 @@ button {
 #startAgainButton {
   background: var(--accent);
   color: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+#homeSection #startButton {
+  margin-top: auto;
+}
+
+.btn-status {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.72;
+}
+
+.btn-status:empty {
+  display: none;
 }
 
 #startButton:hover,
@@ -286,7 +315,19 @@ button[disabled] {
   text-align: center;
 }
 
+.session-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-center .breath-circle {
+  margin: 0;
+}
+
 .breath-circle {
+  --circle-scale: 1;
   width: 170px;
   height: 170px;
   margin: 0 auto var(--space-4);
@@ -309,6 +350,8 @@ button[disabled] {
   font-weight: 500;
   text-align: center;
   color: var(--text);
+  transform: scale(calc(1 / var(--circle-scale, 1)));
+  transition: transform var(--motion-breath) var(--breath-easing, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 
 .remaining-value {
@@ -317,30 +360,36 @@ button[disabled] {
   line-height: 1.1;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
 .phase-begin {
+  --circle-scale: 1;
   transform: scale(1);
 }
 
 .phase-inhale {
-  transform: scale(1.08);
+  --circle-scale: 1.24;
+  transform: scale(1.24);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .phase-hold {
-  transform: scale(1.08);
+  --circle-scale: 1.24;
+  transform: scale(1.24);
   border-color: var(--accent-soft);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .phase-exhale {
-  transform: scale(0.94);
+  --circle-scale: 0.82;
+  transform: scale(0.82);
   background: transparent;
 }
 
 .phase-hold-out {
-  transform: scale(0.94);
+  --circle-scale: 0.82;
+  transform: scale(0.82);
   background: transparent;
 }
 
@@ -349,6 +398,7 @@ button[disabled] {
 }
 
 .phase-complete {
+  --circle-scale: 1;
   transform: scale(1);
   border-color: var(--accent-soft);
   background: transparent;
@@ -360,8 +410,12 @@ button[disabled] {
   margin-top: var(--space-4);
 }
 
+.session-screen .row {
+  margin-top: var(--space-4);
+}
+
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 @keyframes screen-fade {
