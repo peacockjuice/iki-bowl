@@ -173,6 +173,7 @@ function getPhaseRemainingSeconds(label: PhaseLabel, currentTimeSec: number): nu
 }
 
 function setPhaseLabel(label: PhaseLabel, currentTimeSec?: number): void {
+  ui.phaseLabel.classList.remove('countdown-active');
   lastPhaseLabel = label;
 
   const textByLabel: Record<PhaseLabel, string> = {
@@ -189,7 +190,11 @@ function setPhaseLabel(label: PhaseLabel, currentTimeSec?: number): void {
   if ((label === 'Inhale' || label === 'Exhale') && currentTimeSec !== undefined) {
     const ms = Math.round(Math.max(getPhaseRemainingSeconds(label, currentTimeSec), 0.1) * 1000);
     ui.breathCircle.style.setProperty('--motion-breath', `${ms}ms`);
-    ui.breathCircle.style.setProperty('--breath-easing', 'ease-in-out');
+    if (label === 'Inhale') {
+      ui.breathCircle.style.setProperty('--breath-easing', 'cubic-bezier(0.45, 0, 0.55, 1)');
+    } else {
+      ui.breathCircle.style.setProperty('--breath-easing', 'cubic-bezier(0.37, 0, 0.63, 1)');
+    }
   } else if (label === 'Hold' || label === 'HoldOut') {
     ui.breathCircle.style.setProperty('--motion-breath', '300ms');
     ui.breathCircle.style.removeProperty('--breath-easing');
@@ -418,6 +423,7 @@ async function startSelectedSession(): Promise<void> {
     countdownResolve = resolve;
     let count = 3;
     ui.phaseLabel.textContent = '3';
+    ui.phaseLabel.classList.add('countdown-active');
     function tick(): void {
       count--;
       if (count === 0) {
