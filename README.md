@@ -39,3 +39,9 @@ GitHub Pages via `.github/workflows/deploy-pages.yml`:
 
 - push to `main`
 - `Settings -> Pages -> Source: GitHub Actions`
+
+## Caching and updates
+
+- App shell (`index.html`, manifest, icons) is versioned per release and updated with a network-first strategy.
+- If offline, navigation falls back to the cached app shell.
+- Audio cache is versioned separately, so regular app deploys do not force full audio re-downloads.

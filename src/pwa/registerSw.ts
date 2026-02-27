@@ -12,7 +12,11 @@ export function registerServiceWorker(): void {
   }
 
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((error) => {
+    const baseUrl = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+    const swUrl = new URL('sw.js', new URL(baseUrl, window.location.origin));
+    swUrl.searchParams.set('v', __APP_VERSION__);
+
+    void navigator.serviceWorker.register(swUrl.toString()).catch((error) => {
       console.warn('Service worker registration failed', error);
     });
   });

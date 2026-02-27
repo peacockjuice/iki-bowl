@@ -31,7 +31,7 @@ export function renderApp(root: HTMLElement): UiRefs {
     <main class="app">
       <div class="app-header">
         <h1>Iki Bowl</h1>
-        <p class="subtitle">Quiet breathing sessions for iPhone lock-screen use.</p>
+        <p class="subtitle">Quiet breathing sessions to reduce stress</p>
       </div>
       <section id="homeSection" class="card screen-card">
         <div class="field">

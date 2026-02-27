@@ -1,8 +1,23 @@
-const CACHE_VERSION = 'v5';
-const APP_SHELL_CACHE = `iki-bowl-shell-${CACHE_VERSION}`;
-const AUDIO_CACHE = `iki-bowl-audio-${CACHE_VERSION}`;
+const APP_SHELL_PREFIX = 'iki-bowl-shell-';
+const AUDIO_CACHE_PREFIX = 'iki-bowl-audio-';
+const AUDIO_CACHE_VERSION = 'v1';
+const DEFAULT_SHELL_VERSION = 'dev';
 
-const APP_SHELL_ASSETS = ['', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+const APP_SHELL_VERSION = getShellVersion();
+const APP_SHELL_CACHE = `${APP_SHELL_PREFIX}${APP_SHELL_VERSION}`;
+const AUDIO_CACHE = `${AUDIO_CACHE_PREFIX}${AUDIO_CACHE_VERSION}`;
+
+const APP_SHELL_ASSETS = [
+  '',
+  'index.html',
+  'manifest.webmanifest',
+  'favicon.ico',
+  'favicon-16x16.png',
+  'favicon-32x32.png',
+  'apple-touch-icon.png',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -19,7 +34,11 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key.startsWith('iki-bowl-') && key !== APP_SHELL_CACHE && key !== AUDIO_CACHE)
+          .filter(
+            (key) =>
+              (key.startsWith(APP_SHELL_PREFIX) && key !== APP_SHELL_CACHE) ||
+              (key.startsWith(AUDIO_CACHE_PREFIX) && key !== AUDIO_CACHE),
+          )
           .map((key) => caches.delete(key)),
       ),
     ),
@@ -48,7 +67,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(navigateCacheFirst());
+    event.respondWith(navigateNetworkFirst());
     return;
   }
 
@@ -118,21 +137,36 @@ async function primeAudioCache(canonicalUrl) {
   }
 }
 
-async function navigateCacheFirst() {
+function getShellVersion() {
+  try {
+    const registrationUrl = new URL(self.location.href);
+    return registrationUrl.searchParams.get('v') || DEFAULT_SHELL_VERSION;
+  } catch {
+    return DEFAULT_SHELL_VERSION;
+  }
+}
+
+async function navigateNetworkFirst() {
   const cache = await caches.open(APP_SHELL_CACHE);
   const indexUrl = new URL('index.html', self.registration.scope).toString();
-  const cached = await cache.match(indexUrl);
-  if (cached) {
-    return cached;
-  }
 
   try {
-    const response = await fetch(indexUrl);
+    const response = await fetch(new Request(indexUrl, { cache: 'no-cache' }));
     if (response.ok) {
       await cache.put(indexUrl, response.clone());
+      return response;
+    }
+
+    const fallback = await cache.match(indexUrl);
+    if (fallback) {
+      return fallback;
     }
     return response;
   } catch {
+    const fallback = await cache.match(indexUrl);
+    if (fallback) {
+      return fallback;
+    }
     return new Response('Offline', { status: 503, statusText: 'Offline' });
   }
 }
